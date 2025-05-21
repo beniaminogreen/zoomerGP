@@ -1,0 +1,17 @@
+[package]
+name = 'zoomerGP'
+publish = false
+version = '0.1.0'
+edition = '2021'
+rust-version = '1.65'
+
+[lib]
+crate-type = [ 'staticlib' ]
+name = 'zoomerGP'
+
+[dependencies]
+extendr-api = {git ="https://github.com/extendr/extendr.git", package = "extendr-api", features = ["ndarray"]}
+indicatif = "0.17.11"
+ndarray = { version = "0.16.1", features = ['rayon', 'matrixmultiply-threading'] }
+ndarray-linalg = { version = "0.17"}
+rayon = "1.10.0"
