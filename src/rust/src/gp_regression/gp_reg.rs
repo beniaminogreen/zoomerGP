@@ -1,5 +1,5 @@
 use crate::kernel::kernel::Kernel;
-use crate::dataset::DataManager;
+use crate::dataset::{DataManager, UnitStandardizedDataset};
 use crate::dual_number::Dual;
 use crate::constraint::constraints::{Constraints};
 
@@ -11,6 +11,8 @@ use ndarray_linalg::solve::{Inverse, Determinant};
 use extendr_api::prelude::*;
 
 use std::f64::consts::PI;
+use crate::coin_optimizer::CoinOptimizer;
+use crate::kernel::utils::{parse_kernel_recursive, print_kernel_tree};
 
 #[allow(non_snake_case)]
 #[extendr]
@@ -53,6 +55,7 @@ impl GPRegression {
     }
 }
 
+#[extendr]
 impl GPRegression {
     pub fn get_n_params(&self) -> usize {
        self.n_params
@@ -106,7 +109,7 @@ impl GPRegression {
     }
 
     #[allow(non_snake_case)]
-    pub fn predict(&self,  prediction_points :ArrayView2<f64>) -> Array1<f64> {
+    pub fn predict(&self,  prediction_points :ArrayView2<f64>) -> Vec<f64> {
         let mut prediction_points = prediction_points.to_owned();
         prediction_points = self.dataset.scale_predictors(prediction_points.view());
 
@@ -124,7 +127,7 @@ impl GPRegression {
 
         let preds = K_star.dot(&self.K_inv).dot(&self.response);
 
-        preds
+        preds.to_vec()
     }
 
 
@@ -211,6 +214,29 @@ impl GPRegression {
         Dual::from((log_likelihood,gradient))
 
     }
+
+    pub fn display_kernel(&self) {
+        print_kernel_tree(self.kernel.as_ref(), "", true);
+    }
+
+    pub fn optimize(&mut self, max_iter : u32, use_constraints : bool) {
+        let optimizer = CoinOptimizer::new(self, use_constraints);
+        optimizer.run(max_iter as usize);
+    }
+
+    pub fn r_new(x: ArrayView2<f64>, y: &[f64], kernel_specification: List) -> Self {
+        let y = Array1::from(y.to_owned());
+        let x = x.to_owned();
+
+        let kernel = parse_kernel_recursive(kernel_specification);
+        let dataset = Arc::new(UnitStandardizedDataset::new(x,y.clone()));
+
+        Self::new(kernel, dataset, y, true)
+    }
+
 }
 
-
+extendr_module! {
+    mod gp_reg;
+    impl GPRegression;
+}
