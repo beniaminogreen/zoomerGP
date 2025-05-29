@@ -1,8 +1,13 @@
-use crate::dual_number::Dual;
+use ndarray::Array1;
+use ndarray::ArrayView1;
+use crate::dual_number::{Dual, Dualf64, DualArr};
 
 use super::positive::{PositiveExpConstraint, PositiveSoftPlusConstraint};
 
+use extendr_api::prelude::*;
+
 #[derive(Clone, Debug)]
+#[extendr]
 pub enum Constraint  {
     PositiveExp(PositiveExpConstraint),
     PositiveSoftPlus(PositiveSoftPlusConstraint),
@@ -18,19 +23,21 @@ impl Constraint {
         Self::NoConstraint
     }
 
-    pub fn constrain(&self, x: f64, gradient : bool) -> Dual {
+    pub fn constrain(&self, x: f64, gradient : bool) -> Dualf64 {
         match self {
             Self::PositiveExp(inner) => {inner.constrain(x,gradient)},
             Self::PositiveSoftPlus(inner) => {inner.constrain(x,gradient)},
-            Self::NoConstraint => {Dual::from(x)}
+            Self::NoConstraint => {Dualf64::from(x)}
         }
     }
 
-    pub fn unconstrain(&self, x: f64, gradient : bool) -> Dual {
+    pub fn unconstrain(&self, x: f64, gradient : bool) -> Dualf64 {
         match self {
             Self::PositiveExp(inner) => {inner.unconstrain(x,gradient)},
             Self::PositiveSoftPlus(inner) => {inner.constrain(x,gradient)},
-            Self::NoConstraint => {Dual::from(x)}
+            Self::NoConstraint => {Dualf64::from(x)}
         }
     }
 }
+
+

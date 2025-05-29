@@ -5,7 +5,7 @@ n <- 4*10^2
 x <- runif(n, 0,20)
 data <- data.frame(
                x = x,
-               y = sin(x) + rnorm(n,0,.4)
+               y = sin(x/5) + rnorm(n,0,.1)
                )
 
 form <- y ~ rbf(x)
@@ -13,10 +13,72 @@ parsed_form <- r_parse_formula(form, data = data)$specification
 gp <- GPRegression$r_new(as.matrix(data), data$y, parsed_form)
 gp$r_display_kernel()
 gp$r_update()
+gp$r_get_n_params()
+gp$r_set_params(c(1.0,1.0,1.0))
 
-gp$r_optimize(200, TRUE)
+# gp$r_optimize(2000, TRUE)
+# preds <- gp$r_predict(as.matrix(data$x))
+# 
+# plot(data$x, data$y)
+# plot(data$x, preds)
+# 
 
+num_params <- gp$r_get_n_params()
 
+function_to_optimize <- function(params){
+  gpr_model$r_set_params(params)
+  return(gpr_model$r_log_like_grad())
+}
+
+memoized_func <- memoise::memoise(function_to_optimize)
+
+fn <- function(param) {
+  memoized_func(param)$ll
+}
+
+grad <- function(param) {
+  ll_grad <- memoized_func(param)$ll_grad
+}
+
+gp_taining_loop <- function(rust_gpr_object, sparse = F, training_method = c("bfgs", "rgenoud", "coin")) {
+  gpr_model <- rust_gpr_object
+  num_params <- gpr_model$get_n_params()
+  
+  function_to_optimize <- function(params){
+    gp$r_set_params(params)
+    gp$r_update()
+    return(gp$r_log_like_and_grad())
+  }
+  
+  memoized_func <- memoise::memoise(function_to_optimize)
+  
+  fn <- function(param) {
+    memoized_func(param)$ll
+  }
+  
+  grad <- function(param) {
+    ll_grad <- memoized_func(param)$ll_grad
+  }
+  
+  fn(c(.01,.01,.01))
+  
+  gp$r_log_like_and_grad()$ll
+  
+
+  training_method <- match.arg(training_method)
+  if (training_method == "bfgs") {
+    optim_output <- bfgs_training(fn, grad, num_params, sparse)
+    gpr_model$set_params(optim_output)
+  } else if (training_method == "rgenoud") {
+    optim_output <- rgenoud_training(fn, grad, num_params, sparse)
+    gpr_model$set_params(optim_output)
+  } else {
+    gpr_model$optimize(1000)
+  }
+  
+  
+  return(gpr_model)
+}
 
 #
 # new_x  <- data.frame(x = seq(0,40,.2))

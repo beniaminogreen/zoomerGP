@@ -8,6 +8,7 @@ pub trait DataManager {
     fn unscale_outcome(&self, y : ArrayView1<f64>, gradient : bool)  -> DualArr;
     fn scale_outcome(&self, y : ArrayView1<f64>, gradient : bool)  -> DualArr;
     fn shape(&self)  -> (usize,usize);
+    fn scale_predictors(&self, x: ArrayView2<f64>) -> Array2<f64>;
 }
 
 pub struct UnitStandardizedDataset {
@@ -87,6 +88,18 @@ impl DataManager for UnitStandardizedDataset {
             let n = out_arr.len();
             DualArr::from((out_arr, Array1::ones(n)))
         }
+    }
+    
+    fn scale_predictors(&self, x : ArrayView2<f64>) -> Array2<f64> {
+        let mut out = Array2::zeros((x.nrows(), x.ncols()));
+        
+        for (i, column) in x.axis_iter(Axis(1)).enumerate() {
+            for j in 0..column.len() {
+                out[[j,i]] = (column[j] - self.mins[i]) / self.ranges[i];
+            }
+        }
+        
+        out 
     }
 
     fn shape(&self) -> (usize, usize) {

@@ -14,4 +14,6 @@ use extendr_api::prelude::*;
 extendr_module! {
     mod zoomerGP;
     use gp_regression;
+    use dual_number;
+    use constraint;
 }

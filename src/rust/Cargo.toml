@@ -10,8 +10,8 @@ crate-type = [ 'staticlib' ]
 name = 'zoomerGP'
 
 [dependencies]
-extendr-api = {git ="https://github.com/extendr/extendr.git", package = "extendr-api", features = ["ndarray"]}
-indicatif = "0.17.11"
-ndarray = { version = "0.16.1", features = ['rayon', 'matrixmultiply-threading'] }
+extendr-api = { version = "0.8.0", features = ["ndarray"] }
+indicatif = "0.17.8"
+ndarray = { version = "0.16.1", features = ["rayon"] }
 ndarray-linalg = { version = "0.17"}
-rayon = "1.10.0"
+rayon = "1.10"

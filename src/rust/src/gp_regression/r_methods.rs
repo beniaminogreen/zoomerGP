@@ -22,6 +22,15 @@ impl GPRegression {
         Self::new(kernel, dataset, y, true)
     }
 
+    pub fn r_set_params(&mut self, params : &[f64]) {
+        self.set_params(params);
+    }
+
+    pub fn r_get_n_params(&self) -> u64 {
+        self.get_n_params() as u64
+    }
+
+
     pub fn r_update(&mut self) {
         self.update();
     }
@@ -32,19 +41,25 @@ impl GPRegression {
 
     pub fn r_log_like_and_grad(&self) -> List {
         let log_like_and_grad = self.log_like(true);
-        list!(
-            list!(ll = log_like_and_grad.x, ll_grad = Robj::try_from(log_like_and_grad.grad.unwrap()))
-        )
+
+        list!(ll = log_like_and_grad.x, ll_grad = Robj::try_from(log_like_and_grad.grad.unwrap()))
     }
 
     pub fn r_display_kernel(&self) {
-        dbg!(&self.kernel);
         print_kernel_tree(self.kernel.as_ref(), "", true);
     }
 
     pub fn r_optimize(&mut self, max_iter : u32, use_constraints : bool) {
         let optimizer = CoinOptimizer::new(self, use_constraints);
         optimizer.run(max_iter as usize);
+    }
+    
+    pub fn r_predict(&self, x: ArrayView2<f64>) -> Vec<f64> {
+        self.predict(x.view()).to_vec()
+    }
+
+    pub fn r_constrain_parameters(&self, params : &[f64]) -> List {
+        todo!()
     }
 
 }
@@ -54,3 +69,4 @@ extendr_module!{
     mod r_methods;
     impl GPRegression;
 }
+

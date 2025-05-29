@@ -14,6 +14,10 @@ GPRegression <- new.env(parent = emptyenv())
 
 GPRegression$r_new <- function(x, y, kernel_specification) .Call(wrap__GPRegression__r_new, x, y, kernel_specification)
 
+GPRegression$r_set_params <- function(params) invisible(.Call(wrap__GPRegression__r_set_params, self, params))
+
+GPRegression$r_get_n_params <- function() .Call(wrap__GPRegression__r_get_n_params, self)
+
 GPRegression$r_update <- function() invisible(.Call(wrap__GPRegression__r_update, self))
 
 GPRegression$r_log_like <- function() .Call(wrap__GPRegression__r_log_like, self)
@@ -23,6 +27,8 @@ GPRegression$r_log_like_and_grad <- function() .Call(wrap__GPRegression__r_log_l
 GPRegression$r_display_kernel <- function() invisible(.Call(wrap__GPRegression__r_display_kernel, self))
 
 GPRegression$r_optimize <- function(max_iter, use_constraints) invisible(.Call(wrap__GPRegression__r_optimize, self, max_iter, use_constraints))
+
+GPRegression$r_predict <- function(x) .Call(wrap__GPRegression__r_predict, self, x)
 
 #' @export
 `$.GPRegression` <- function (self, name) { func <- GPRegression[[name]]; environment(func) <- environment(); func }

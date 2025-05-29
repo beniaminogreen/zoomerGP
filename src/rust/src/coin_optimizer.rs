@@ -1,13 +1,14 @@
 use extendr_api::prelude::*;
 use ndarray::Array1;
 
+use crate::constraint::constraints::Constraints;
 use crate::constraint::constraint::Constraint;
 use crate::gp_regression::gp_reg::GPRegression;
 
 
 use indicatif::ProgressBar;
 
-// impliments Algorithm 2 from
+// Implements Algorithm 2 from
 // https://arxiv.org/pdf/1705.07795
 #[allow(non_snake_case)]
 pub struct CoinOptimizer<'a> {
@@ -20,14 +21,14 @@ pub struct CoinOptimizer<'a> {
     R: Array1<f64>,
     theta: Array1<f64>,
     model: &'a mut GPRegression,
-    constraints : Option<Vec<Constraint>>
+    constraints : Option<Constraints>
 }
 
 impl<'a> CoinOptimizer<'a> {
     pub fn new(model: &'a mut GPRegression, use_constraints : bool) -> Self {
         let d = model.get_n_params();
-        let constraints : Option<Vec<Constraint>> =  if use_constraints {
-            Some(model.reccomend_constraints())
+        let constraints : Option<Constraints> =  if use_constraints {
+            Some(model.recommend_constraints())
         } else {
             None
         };
@@ -58,11 +59,10 @@ impl<'a> CoinOptimizer<'a> {
             let mut param_transform_grads = Array1::ones(self.d);
 
             if let Some(constraints)  = &self.constraints {
-                for (i, constraint) in constraints.iter().enumerate() {
-                    let constrained = constraint.constrain(self.W[i], true);
-                    transformed_W[i] = constrained.x;
-                    param_transform_grads[i] = constrained.grad.unwrap()[0];
-                }
+                let constrained = constraints.constrain(self.W.as_slice().expect("non-contiguous in memory"));
+
+                transformed_W = constrained.x;
+                param_transform_grads = constrained.grad.unwrap();
             }
 
             self.model.set_params(transformed_W.as_slice().unwrap());
@@ -70,9 +70,7 @@ impl<'a> CoinOptimizer<'a> {
             let dual = self.model.log_like(true);
             let log_like = dual.x;
             let grad = dual.grad.unwrap() * param_transform_grads;
-
-            dbg!(log_like);
-            dbg!(&grad);
+            
             if log_like.gt(&best_log_like) {
                 best_w = self.W.clone();
                 if (best_log_like - log_like).abs().gt(&0.01) {

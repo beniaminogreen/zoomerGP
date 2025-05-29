@@ -1,11 +1,11 @@
 use crate::kernel::kernel::Kernel;
 use crate::dataset::DataManager;
 use crate::dual_number::Dual;
-use crate::constraint::constraint::Constraint;
+use crate::constraint::constraints::{Constraints};
 
 use std::sync::Arc;
 
-use ndarray::{Array2, Axis, Array1, Array3};
+use ndarray::{Array2, Axis, Array1, Array3, ArrayView2};
 use ndarray_linalg::solve::{Inverse, Determinant};
 
 use extendr_api::prelude::*;
@@ -24,6 +24,7 @@ pub struct GPRegression{
     stale : bool,
     K: Array2<f64>,
     K_inv: Array2<f64>,
+    constraints : Constraints
 }
 
 #[allow(non_snake_case)]
@@ -41,23 +42,24 @@ impl GPRegression {
             dataset,
             stale : true,
             response,
-            noise : noise,
+            noise,
             n_params,
             K_inv : Array2::zeros((n,n)),
             K : Array2::zeros((n,n)),
             sigma : 1.0,
-            kernel
+            constraints : Constraints::new(kernel.rec_constraint()),
+            kernel, 
         }
     }
 }
 
 impl GPRegression {
     pub fn get_n_params(&self) -> usize {
-        return self.n_params
+       self.n_params
     }
 
-    pub fn reccomend_constraints(&self) -> Vec<Constraint> {
-        self.kernel.rec_constraint()
+    pub fn recommend_constraints(&self) -> Constraints {
+        self.constraints.clone()
     }
 
     pub fn set_params(&mut self, params: &[f64]) {
@@ -76,8 +78,6 @@ impl GPRegression {
         if !self.stale {
             return
         }
-
-        dbg!(&self.kernel);
 
 
         let X = self.dataset.get_X();
@@ -106,6 +106,29 @@ impl GPRegression {
     }
 
     #[allow(non_snake_case)]
+    pub fn predict(&self,  prediction_points :ArrayView2<f64>) -> Array1<f64> {
+        let mut prediction_points = prediction_points.to_owned();
+        prediction_points = self.dataset.scale_predictors(prediction_points.view());
+
+        let X = self.dataset.get_X();
+
+        let mut K_star = Array2::zeros((prediction_points.nrows(), self.dataset.shape().0));
+
+        K_star.axis_iter_mut(Axis(0))
+            .enumerate()
+            .for_each(|(i, mut row)| {
+                for (j, element) in row.iter_mut().enumerate() {
+                    *element = self.kernel.calc(prediction_points.row(i).view(), X.row(j), false).x;
+                }
+            });
+
+        let preds = K_star.dot(&self.K_inv).dot(&self.response);
+
+        preds
+    }
+
+
+    #[allow(non_snake_case)]
     pub fn log_like(&self, gradient : bool)  -> Dual {
 
         if self.stale {
@@ -116,7 +139,7 @@ impl GPRegression {
         let X = self.dataset.get_X();
         let n = self.dataset.shape().0;
 
-        let lhs = -0.5 * (y.t()).dot(&self.K_inv).dot(&y);
+        let lhs = -0.5 * y.t().dot(&self.K_inv).dot(&y);
 
          //-0.5 log |K|
         let (_, log_det) = self
@@ -140,7 +163,7 @@ impl GPRegression {
         let mut matrix_differentials: Array3<f64> = Array3::zeros((n, n, d));
 
         let mut offset  = 0;
-        // if we have gaussian noie, add the derivatives with respect to sigma
+        // if we have gaussian noise, add the derivatives with respect to sigma
         if self.noise {
             for i in 0..n {
                 matrix_differentials[[i, i, 0]] = 2.0 * self.sigma;
@@ -148,7 +171,7 @@ impl GPRegression {
             offset +=1
         }
 
-        // then loop over the other parameters. If we did not have the noise, then there will be
+        // Then loop over the other parameters. If we did not have the noise, then there will be
         // fewer params to loop over
         for i in 0..n {
             for j in 0..(i + 1) {
@@ -166,8 +189,8 @@ impl GPRegression {
 
         let mut gradient: Array1<f64> = Array1::zeros(d);
         // See Rassmusen and Williams p. 114, equation 5.9
-        // lhs : left-hand side
-        // rhs : right-hand side
+        // lhs: left-hand side
+        // rhs: right-hand side
         for i in 0..d {
             let k_grad = matrix_differentials.index_axis(Axis(2), i);
 
