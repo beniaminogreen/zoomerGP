@@ -4,6 +4,7 @@ mod dual_number;
 mod gp_regression;
 mod dataset;
 mod coin_optimizer;
+mod sparse_gp_reg;
 //mod regression_manager;
 
 use extendr_api::prelude::*;

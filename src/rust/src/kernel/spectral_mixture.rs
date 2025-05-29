@@ -112,7 +112,7 @@ impl Kernel for SpectralMixtureKernel {
     }
 
     fn describe(&self) -> String {
-        "Spectral Mixture Kernel".to_string()
+        format!("Spectral Mixture Kernel with {}", self.q)
     }
 }
 

@@ -1,6 +1,6 @@
 use crate::kernel::kernel::Kernel;
 use crate::dataset::{DataManager, UnitStandardizedDataset};
-use crate::dual_number::Dual;
+use crate::dual_number::{Dual, DualArr};
 use crate::constraint::constraints::{Constraints};
 
 use std::sync::Arc;
@@ -109,7 +109,7 @@ impl GPRegression {
     }
 
     #[allow(non_snake_case)]
-    pub fn predict(&self,  prediction_points :ArrayView2<f64>) -> Vec<f64> {
+    pub fn predict(&self,  prediction_points :ArrayView2<f64>) -> PredictionOutput {
         let mut prediction_points = prediction_points.to_owned();
         prediction_points = self.dataset.scale_predictors(prediction_points.view());
 
@@ -127,7 +127,22 @@ impl GPRegression {
 
         let preds = K_star.dot(&self.K_inv).dot(&self.response);
 
-        preds.to_vec()
+        let var : Vec<f64> = prediction_points
+            .axis_iter(Axis(0))
+            //.into_par_iter()
+            .enumerate()
+            .map(|(i, x)| {
+                let x = x.view();
+                let rhs = self.kernel.calc(x, x, false).x;
+                let lhs = K_star.row(i).t().dot(&self.K_inv).dot(&K_star.row(i));
+                rhs - lhs
+            })
+            .collect();
+
+        let f_var = Array1::from(var);
+        let pred_var = f_var.clone() + self.sigma.powi(2);
+
+        PredictionOutput::from((preds, Some(f_var), Some(pred_var)))
     }
 
 
@@ -216,7 +231,7 @@ impl GPRegression {
     }
 
     pub fn display_kernel(&self) {
-        print_kernel_tree(self.kernel.as_ref(), "", true);
+        print_kernel_tree(self.kernel.as_ref(), "", "A", true);
     }
 
     pub fn optimize(&mut self, max_iter : u32, use_constraints : bool) {
@@ -224,16 +239,39 @@ impl GPRegression {
         optimizer.run(max_iter as usize);
     }
 
-    pub fn r_new(x: ArrayView2<f64>, y: &[f64], kernel_specification: List) -> Self {
+    pub fn r_new(x: ArrayView2<f64>, y: &[f64], kernel_specification: List, noiseless: bool) -> Self {
         let y = Array1::from(y.to_owned());
         let x = x.to_owned();
 
         let kernel = parse_kernel_recursive(kernel_specification);
         let dataset = Arc::new(UnitStandardizedDataset::new(x,y.clone()));
 
-        Self::new(kernel, dataset, y, true)
+        Self::new(kernel, dataset, y, noiseless)
     }
 
+}
+
+#[extendr]
+struct PredictionOutput {
+    response : Array1<f64>,
+    f_var : Option<Array1<f64>>,
+    pred_var : Option<Array1<f64>>
+}
+
+impl From<(Array1<f64>,Option<Array1<f64>>, Option<Array1<f64>>)> for PredictionOutput {
+    fn from(x : (Array1<f64>,Option<Array1<f64>>, Option<Array1<f64>>)) -> Self {
+        Self{
+            response : x.0,
+            f_var : x.1,
+            pred_var : x.2
+        }
+    }
+}
+#[extendr]
+impl PredictionOutput {
+    fn get_response(&self) -> Vec<f64> {
+        self.response.to_vec()
+    }
 }
 
 extendr_module! {
