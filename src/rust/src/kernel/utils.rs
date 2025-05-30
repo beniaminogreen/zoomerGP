@@ -9,6 +9,9 @@ use super::rbf::ExpQuadKernel;
 
 use super::kernel::Kernel;
 
+use ndarray::{Array2, Axis, Array1, Array3, ArrayView2};
+
+
 //#[allow(non_snake_case)]
 //pub fn matrix_inner_product(x: ArrayView2<f64>) -> Array2<f64> {
 //    let (_, R) = x.qr().unwrap();
@@ -36,23 +39,23 @@ use super::kernel::Kernel;
 //}
 //
 //#[allow(non_snake_case)]
-//pub fn fast_gradient_matrix(
-//    A: ArrayView2<f64>,
-//    B: ArrayView2<f64>,
-//    kernel_func: &Box<dyn KernelFunc>,
-//) -> Array3<f64> {
-//    let mut out: Array3<f64> = Array3::zeros((A.nrows(), B.nrows(), kernel_func.num_params()));
-//    out.axis_iter_mut(Axis(0))
-//        .into_par_iter()
-//        .enumerate()
-//        .for_each(|(i, mut row)| {
-//            for (j, mut column) in row.axis_iter_mut(Axis(0)).enumerate() {
-//                column.assign(&kernel_func.calculate_gradient(A.row(i).view(), B.row(j).view()));
-//            }
-//        });
-//
-//    out
-//}
+pub fn fast_gradient_matrix(
+    A: ArrayView2<f64>,
+    B: ArrayView2<f64>,
+    kernel_func: &Box<dyn Kernel>,
+) -> Array3<f64> {
+    let mut out: Array3<f64> = Array3::zeros((A.nrows(), B.nrows(), kernel_func.num_params()));
+    out.axis_iter_mut(Axis(0))
+        .into_iter()
+        .enumerate()
+        .for_each(|(i, mut row)| {
+            for (j, mut column) in row.axis_iter_mut(Axis(0)).enumerate() {
+                column.assign(&kernel_func.calc(A.row(i).view(), B.row(j).view(), true).grad.unwrap());
+            }
+        });
+
+    out
+}
 
 pub fn parse_kernel_recursive(kernel_specification: List) -> Box<dyn Kernel> {
     let kernel_dict = kernel_specification.into_hashmap();
@@ -126,4 +129,33 @@ pub fn print_kernel_tree(kernel: &dyn Kernel, prefix: &str, label : &str, is_las
         new_label.push_str(label);
         print_kernel_tree(child.as_ref(), &new_prefix, &new_label, last);
     }
+}
+
+fn remove_first_n_chars(s: &str, n: usize) -> &str {
+    let mut chars = s.chars();
+    for _ in 0..n {
+        chars.next();
+    }
+    chars.as_str()
+}
+
+pub fn recusive_select_kernel<'a>(kernel : &'a dyn Kernel, search_string : &str) -> &'a dyn Kernel {
+    if search_string.is_empty() {
+        panic!("Search string is empty");
+    }
+
+    if search_string.len() == 1 {
+        return kernel;
+    }
+
+    let requested_letter = search_string.chars().nth(1).unwrap();
+    let suffix = remove_first_n_chars(search_string, 2);
+    for (i, child) in kernel.children().iter().enumerate() {
+        let letter_label = get_uppercase_letter(i).unwrap();
+        if letter_label ==  requested_letter {
+            return recusive_select_kernel(child.as_ref(), suffix)
+        };
+    };
+
+    panic!("No matching child found for '{}'", requested_letter);
 }
