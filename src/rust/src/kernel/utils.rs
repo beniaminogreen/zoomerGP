@@ -8,9 +8,10 @@ use super::spectral_mixture::SpectralMixtureKernel;
 use super::rbf::ExpQuadKernel;
 
 use super::kernel::Kernel;
+use ndarray_linalg::cholesky::{Cholesky, UPLO};
 
 use ndarray::{Array2, Axis, Array1, Array3, ArrayView2};
-
+use ndarray_linalg::SVD;
 
 //#[allow(non_snake_case)]
 //pub fn matrix_inner_product(x: ArrayView2<f64>) -> Array2<f64> {
@@ -18,25 +19,32 @@ use ndarray::{Array2, Axis, Array1, Array3, ArrayView2};
 //    R.t().dot(&R)
 //}
 //
-//pub fn get_cond_number(x: ArrayView2<f64>) -> f64 {
-//    let svd = x.svd(false, false).unwrap();
-//    let singular_values = svd.1;
-//    // The condition number is the ratio of the largest to the smallest singular value
-//    singular_values[0] / singular_values[singular_values.len() - 1]
-//}
-//
-//pub fn fix_conditioning(x: &mut Array2<f64>) {
-//    let mut iter = -8;
-//    let mut cond_number = get_cond_number(x.view());
-//    while cond_number.log10() > 4.0 && iter < -1 {
-//        let amount_to_add = (10.0_f64).powi(iter);
-//        for i in 0..x.nrows() {
-//            x[[i, i]] += amount_to_add;
-//        }
-//        iter += 1;
-//        cond_number = get_cond_number(x.view());
-//    }
-//}
+pub fn get_cond_number(x: ArrayView2<f64>) -> f64 {
+    let svd = x.svd(false, false).unwrap();
+    let singular_values = svd.1;
+    // The condition number is the ratio of the largest to the smallest singular value
+    singular_values[0] / singular_values[singular_values.len() - 1]
+}
+
+pub fn fix_conditioning(x: &mut Array2<f64>) {
+    let mut iter = -8;
+    let mut cond_number = get_cond_number(x.view());
+    while cond_number.log10() > 4.0 && iter < -1 {
+        let amount_to_add = (10.0_f64).powi(iter);
+        for i in 0..x.nrows() {
+            x[[i, i]] += amount_to_add;
+        }
+        iter += 1;
+        cond_number = get_cond_number(x.view());
+    }
+}
+
+pub fn stable_log_det(x: ArrayView2<f64>) -> f64 {
+    let chol = x.cholesky(UPLO::Lower).expect("x not positive definite");
+    let log_det = 2.0 * chol.diag().map(|x| x.ln()).sum();
+    log_det
+}
+
 //
 //#[allow(non_snake_case)]
 pub fn fast_gradient_matrix(

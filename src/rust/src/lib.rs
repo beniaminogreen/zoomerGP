@@ -4,7 +4,8 @@ mod dual_number;
 mod gp_regression;
 mod dataset;
 mod coin_optimizer;
-mod sparse_gp_reg;
+mod sparse_gp_regression;
+mod predict;
 //mod regression_manager;
 
 use extendr_api::prelude::*;
@@ -17,4 +18,6 @@ extendr_module! {
     use gp_regression;
     use dual_number;
     use constraint;
+    use sparse_gp_regression;
+    use predict;
 }
