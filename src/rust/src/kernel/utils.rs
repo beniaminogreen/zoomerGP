@@ -149,7 +149,7 @@ pub fn recusive_select_kernel<'a>(kernel : &'a dyn Kernel, search_string : &str)
     }
 
     let requested_letter = search_string.chars().nth(1).unwrap();
-    let suffix = remove_first_n_chars(search_string, 2);
+    let suffix = remove_first_n_chars(search_string, 1);
     for (i, child) in kernel.children().iter().enumerate() {
         let letter_label = get_uppercase_letter(i).unwrap();
         if letter_label ==  requested_letter {
