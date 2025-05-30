@@ -12,7 +12,7 @@ use extendr_api::prelude::*;
 
 use std::f64::consts::PI;
 use crate::coin_optimizer::CoinOptimizer;
-use crate::kernel::utils::{parse_kernel_recursive, print_kernel_tree};
+use crate::kernel::utils::{parse_kernel_recursive, print_kernel_tree, recusive_select_kernel};
 
 #[allow(non_snake_case)]
 #[extendr]
@@ -109,7 +109,7 @@ impl GPRegression {
     }
 
     #[allow(non_snake_case)]
-    pub fn predict(&self,  prediction_points :ArrayView2<f64>) -> PredictionOutput {
+    pub fn predict(&self,  prediction_points :ArrayView2<f64>, sub_kernel : Option<String>) -> PredictionOutput {
         let mut prediction_points = prediction_points.to_owned();
         prediction_points = self.dataset.scale_predictors(prediction_points.view());
 
@@ -117,11 +117,16 @@ impl GPRegression {
 
         let mut K_star = Array2::zeros((prediction_points.nrows(), self.dataset.shape().0));
 
+        let kernel = match sub_kernel {
+            Some(search_str) => {recusive_select_kernel(self.kernel.as_ref(), search_str.as_str())}
+            None => {self.kernel.as_ref()}
+        };
+
         K_star.axis_iter_mut(Axis(0))
             .enumerate()
             .for_each(|(i, mut row)| {
                 for (j, element) in row.iter_mut().enumerate() {
-                    *element = self.kernel.calc(prediction_points.row(i).view(), X.row(j), false).x;
+                    *element = kernel.calc(prediction_points.row(i).view(), X.row(j), false).x;
                 }
             });
 
@@ -238,6 +243,8 @@ impl GPRegression {
         let optimizer = CoinOptimizer::new(self, use_constraints);
         optimizer.run(max_iter as usize);
     }
+
+
 
     pub fn r_new(x: ArrayView2<f64>, y: &[f64], kernel_specification: List, noiseless: bool) -> Self {
         let y = Array1::from(y.to_owned());
