@@ -119,9 +119,9 @@ fn get_uppercase_letter(index: usize) -> Option<char> {
     }
 }
 
-pub fn print_kernel_tree(kernel: &dyn Kernel, prefix: &str, label : &str, is_last: bool) {
+pub fn build_kernel_tree(kernel: &dyn Kernel, prefix: &str, label : &str, is_last: bool) -> String {
     let branch = if is_last { "└── " } else { "├── " };
-    println!("{}{} ({}) {}", prefix, branch, label, kernel.describe());
+    let mut result = format!("{}{} ({}) {}\n", prefix, branch, label, kernel.describe());
 
     let new_prefix = if is_last {
         format!("{}    ", prefix)
@@ -133,10 +133,12 @@ pub fn print_kernel_tree(kernel: &dyn Kernel, prefix: &str, label : &str, is_las
     for (i, child) in children.iter().enumerate() {
         let last = i == children.len() - 1;
         let mut new_label = String::with_capacity(1 + label.len());
-        new_label.push(get_uppercase_letter(i).unwrap());
         new_label.push_str(label);
-        print_kernel_tree(child.as_ref(), &new_prefix, &new_label, last);
+        new_label.push(get_uppercase_letter(i).unwrap());
+        result.push_str(&build_kernel_tree(child.as_ref(), &new_prefix, &new_label, last));
     }
+
+    result
 }
 
 fn remove_first_n_chars(s: &str, n: usize) -> &str {

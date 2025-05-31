@@ -7,15 +7,16 @@ use crate::constraint::constraints::{Constraints};
 
 use std::sync::Arc;
 
-use ndarray::{Array2, Axis, Array1, Array3, ArrayView2};
+use ndarray::{Array2, Axis, Array1, Array3, ArrayView2,s};
 use ndarray_linalg::solve::{Inverse, Determinant};
 use ndarray_linalg::{DeterminantC, Trace};
 use extendr_api::prelude::*;
 
 use std::f64::consts::PI;
 use crate::coin_optimizer::CoinOptimizer;
-use crate::kernel::utils::{parse_kernel_recursive, print_kernel_tree, stable_log_det};
+use crate::kernel::utils::{parse_kernel_recursive, build_kernel_tree, stable_log_det};
 use crate::predict::PredictionOutput;
+
 
 #[allow(non_snake_case)]
 #[extendr]
@@ -93,8 +94,8 @@ impl SparseGPRegression {
         self.constraints.clone()
     }
 
-    pub fn display_kernel(&self) {
-        print_kernel_tree(self.kernel.as_ref(), "", "A", true);
+    pub fn display_kernel(&self) -> String {
+        build_kernel_tree(self.kernel.as_ref(), "", "A", true)
     }
 
     #[allow(non_snake_case)]
@@ -124,8 +125,10 @@ impl SparseGPRegression {
                 }
             });
 
-        fix_conditioning(&mut self.K_mm);
-
+        let m = self.K_mm.nrows();
+        for i in 0..m {
+            self.K_mm[[i, i]] += 0.000001;
+        }
         self.stale = false;
     }
     #[allow(non_snake_case)]
@@ -135,7 +138,11 @@ impl SparseGPRegression {
         let G = self.K_nm.t().dot(&self.K_nm);
         let mut Z = &self.K_mm + (G.clone() / self.sigma.powi(2));
 
-        //fix_conditioning(&mut Z);
+
+        let m = Z.nrows();
+        for i in 0..m {
+            Z[[i, i]] += 0.000001;
+        }
 
         let Z_log_det = stable_log_det(Z.view());
         let K_mm_log_det = stable_log_det(self.K_mm.view());

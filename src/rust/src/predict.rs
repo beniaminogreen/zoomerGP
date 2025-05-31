@@ -1,3 +1,4 @@
+use extendr_api::Doubles;
 use extendr_api::prelude::*;
 use ndarray::Array1;
 
@@ -21,6 +22,22 @@ impl From<(Array1<f64>,Option<Array1<f64>>, Option<Array1<f64>>)> for Prediction
 impl PredictionOutput {
     fn get_response(&self) -> Vec<f64> {
         self.response.to_vec()
+    }
+
+    fn get_f_var(&self) -> Option<Doubles> {
+        match self.f_var { 
+            None => None,
+            Some(ref f_var) => {Some(Doubles::from_values(f_var.to_vec()))}
+        }
+    }
+
+    fn get_pred_var(&self) -> Option<Doubles> {
+        match self.pred_var {
+            None => None,
+            Some(ref pred_var) => {
+                Some(Doubles::from_values(pred_var.to_vec()))
+            }
+        }
     }
 }
 

@@ -13,7 +13,7 @@ use extendr_api::prelude::*;
 
 use std::f64::consts::PI;
 use crate::coin_optimizer::CoinOptimizer;
-use crate::kernel::utils::{parse_kernel_recursive, print_kernel_tree, recusive_select_kernel};
+use crate::kernel::utils::{build_kernel_tree, parse_kernel_recursive, recusive_select_kernel};
 
 #[allow(non_snake_case)]
 #[extendr]
@@ -236,8 +236,8 @@ impl GPRegression {
 
     }
 
-    pub fn display_kernel(&self) {
-        print_kernel_tree(self.kernel.as_ref(), "", "A", true);
+    pub fn display_kernel(&self) -> String {
+        build_kernel_tree(self.kernel.as_ref(), "", "A", true)
     }
 
     pub fn optimize(&mut self, max_iter : u32, use_constraints : bool) {

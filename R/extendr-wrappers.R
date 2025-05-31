@@ -12,29 +12,113 @@ NULL
 
 GPRegression <- new.env(parent = emptyenv())
 
-GPRegression$r_new <- function(x, y, kernel_specification) .Call(wrap__GPRegression__r_new, x, y, kernel_specification)
+GPRegression$get_n_params <- function() .Call(wrap__GPRegression__get_n_params, self)
 
-GPRegression$r_set_params <- function(params) invisible(.Call(wrap__GPRegression__r_set_params, self, params))
+GPRegression$recommend_constraints <- function() .Call(wrap__GPRegression__recommend_constraints, self)
 
-GPRegression$r_get_n_params <- function() .Call(wrap__GPRegression__r_get_n_params, self)
+GPRegression$set_params <- function(params) invisible(.Call(wrap__GPRegression__set_params, self, params))
 
-GPRegression$r_update <- function() invisible(.Call(wrap__GPRegression__r_update, self))
+GPRegression$update <- function() invisible(.Call(wrap__GPRegression__update, self))
 
-GPRegression$r_log_like <- function() .Call(wrap__GPRegression__r_log_like, self)
+GPRegression$predict <- function(prediction_points, sub_kernel) .Call(wrap__GPRegression__predict, self, prediction_points, sub_kernel)
 
-GPRegression$r_log_like_and_grad <- function() .Call(wrap__GPRegression__r_log_like_and_grad, self)
+GPRegression$log_like <- function(gradient) .Call(wrap__GPRegression__log_like, self, gradient)
 
-GPRegression$r_display_kernel <- function() invisible(.Call(wrap__GPRegression__r_display_kernel, self))
+GPRegression$display_kernel <- function() .Call(wrap__GPRegression__display_kernel, self)
 
-GPRegression$r_optimize <- function(max_iter, use_constraints) invisible(.Call(wrap__GPRegression__r_optimize, self, max_iter, use_constraints))
+GPRegression$optimize <- function(max_iter, use_constraints) invisible(.Call(wrap__GPRegression__optimize, self, max_iter, use_constraints))
 
-GPRegression$r_predict <- function(x) .Call(wrap__GPRegression__r_predict, self, x)
+GPRegression$r_new <- function(x, y, kernel_specification, noiseless) .Call(wrap__GPRegression__r_new, x, y, kernel_specification, noiseless)
 
 #' @export
 `$.GPRegression` <- function (self, name) { func <- GPRegression[[name]]; environment(func) <- environment(); func }
 
 #' @export
 `[[.GPRegression` <- `$.GPRegression`
+
+Dualf64 <- new.env(parent = emptyenv())
+
+Dualf64$get_x <- function() .Call(wrap__Dualf64__get_x, self)
+
+Dualf64$get_grad <- function() .Call(wrap__Dualf64__get_grad, self)
+
+#' @export
+`$.Dualf64` <- function (self, name) { func <- Dualf64[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.Dualf64` <- `$.Dualf64`
+
+Dual <- new.env(parent = emptyenv())
+
+Dual$get_x <- function() .Call(wrap__Dual__get_x, self)
+
+Dual$get_grad <- function() .Call(wrap__Dual__get_grad, self)
+
+#' @export
+`$.Dual` <- function (self, name) { func <- Dual[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.Dual` <- `$.Dual`
+
+DualArr <- new.env(parent = emptyenv())
+
+DualArr$get_x <- function() .Call(wrap__DualArr__get_x, self)
+
+DualArr$get_grad <- function() .Call(wrap__DualArr__get_grad, self)
+
+#' @export
+`$.DualArr` <- function (self, name) { func <- DualArr[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.DualArr` <- `$.DualArr`
+
+Constraints <- new.env(parent = emptyenv())
+
+Constraints$constrain <- function(params) .Call(wrap__Constraints__constrain, self, params)
+
+#' @export
+`$.Constraints` <- function (self, name) { func <- Constraints[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.Constraints` <- `$.Constraints`
+
+SparseGPRegression <- new.env(parent = emptyenv())
+
+SparseGPRegression$new <- function(X, X_inducing, y, kernel_specification) .Call(wrap__SparseGPRegression__new, X, X_inducing, y, kernel_specification)
+
+SparseGPRegression$get_n_params <- function() .Call(wrap__SparseGPRegression__get_n_params, self)
+
+SparseGPRegression$set_params <- function(params) invisible(.Call(wrap__SparseGPRegression__set_params, self, params))
+
+SparseGPRegression$recommend_constraints <- function() .Call(wrap__SparseGPRegression__recommend_constraints, self)
+
+SparseGPRegression$display_kernel <- function() .Call(wrap__SparseGPRegression__display_kernel, self)
+
+SparseGPRegression$update <- function() invisible(.Call(wrap__SparseGPRegression__update, self))
+
+SparseGPRegression$log_like <- function(gradient) .Call(wrap__SparseGPRegression__log_like, self, gradient)
+
+SparseGPRegression$predict <- function(prediction_points, sub_kernel) .Call(wrap__SparseGPRegression__predict, self, prediction_points, sub_kernel)
+
+#' @export
+`$.SparseGPRegression` <- function (self, name) { func <- SparseGPRegression[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.SparseGPRegression` <- `$.SparseGPRegression`
+
+PredictionOutput <- new.env(parent = emptyenv())
+
+PredictionOutput$get_response <- function() .Call(wrap__PredictionOutput__get_response, self)
+
+PredictionOutput$get_f_var <- function() .Call(wrap__PredictionOutput__get_f_var, self)
+
+PredictionOutput$get_pred_var <- function() .Call(wrap__PredictionOutput__get_pred_var, self)
+
+#' @export
+`$.PredictionOutput` <- function (self, name) { func <- PredictionOutput[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.PredictionOutput` <- `$.PredictionOutput`
 
 
 # nolint end

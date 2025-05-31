@@ -53,7 +53,8 @@ impl<'a> CoinOptimizer<'a> {
         let mut best_log_like = f64::NEG_INFINITY;
         let mut iters_since_improvement = 0;
 
-        for _ in 0..max_iter {
+        for iter in 0..max_iter {
+            dbg!((iter,best_log_like));
 
             let mut transformed_W = self.W.to_owned();
             let mut param_transform_grads = Array1::ones(self.d);
@@ -74,11 +75,11 @@ impl<'a> CoinOptimizer<'a> {
             if log_like.gt(&best_log_like) {
                 best_w = self.W.clone();
                 if (best_log_like - log_like).abs().gt(&0.01) {
-                    iters_since_improvement = 0
+                    iters_since_improvement = 0;
+                    best_log_like = log_like;
                 } else {
-                    iters_since_improvement  += 1
+                    iters_since_improvement  += 1;
                 }
-                best_log_like = log_like;
             } else {
                 iters_since_improvement += 1;
             }
@@ -91,13 +92,13 @@ impl<'a> CoinOptimizer<'a> {
                 self.L[i] = grad[i].abs().max(self.L[i]); // line 6
                 self.G[i] += grad[i].abs(); // line 7
 
-                self.R[i] = (self.R[i] + (self.W[i] - self.W_zero[i]) * grad[i]).max(0.0); // line 8
+                self.R[i] = (self.R[i] + ((self.W[i] - self.W_zero[i]) * grad[i])).max(0.0); // line 8
 
                 self.theta[i] += grad[i]; // Line 9
 
                 let numerator = self.theta[i] * (self.L[i] + self.R[i]);
-                let denominator = self.L[i] * (self.G[i] + self.L[i]).max(self.alpha * self.L[i]);
-
+                let denominator = self.L[i] * ((self.G[i] + self.L[i]).max(self.alpha * self.L[i]));
+                dbg!(numerator / denominator);
                 self.W[i] = self.W_zero[i] + (numerator / denominator);
             }
 
