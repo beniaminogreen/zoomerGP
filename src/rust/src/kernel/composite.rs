@@ -44,6 +44,8 @@ impl Kernel for CompositeKernel {
         }
     }
 
+    // this is incorrect because each kernel's hyperparameters then
+
     fn calc(&self, x: ArrayView1<f64>, y: ArrayView1<f64>, gradient : bool) -> Dual {
         if !gradient {
             self.kernels

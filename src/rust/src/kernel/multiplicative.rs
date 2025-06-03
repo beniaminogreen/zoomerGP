@@ -42,6 +42,7 @@ impl Kernel for MultiplicativeKernel {
         self.children[1].set_params(rhs_params);
     }
 
+    // Gradient collection here is correct
     fn calc(&self, x: ArrayView1<f64>, y: ArrayView1<f64>, gradient : bool) -> Dual {
         let lhs = self.children[0].calc(x, y, gradient);
         let rhs = self.children[1].calc(x, y, gradient);
