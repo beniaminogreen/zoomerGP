@@ -4,6 +4,7 @@ use crate::kernel::kernel::Kernel;
 use crate::dataset::{DataManager, UnitStandardizedDataset};
 use crate::dual_number::{Dual, DualArr};
 use crate::constraint::constraints::{Constraints};
+use crate::constraint::constraint::{Constraint};
 
 use std::sync::Arc;
 
@@ -61,7 +62,10 @@ impl SparseGPRegression {
 
         let n_params = kernel.num_params() + 1;
 
-        let constraints = Constraints::new(kernel.rec_constraint());
+
+        let kernel_constraints = kernel.rec_constraint();
+        let mut constraints = vec![Constraint::new_positive_sp()];
+        constraints.extend(kernel_constraints);
 
         Self {
             dataset,
@@ -75,7 +79,7 @@ impl SparseGPRegression {
             K_nm: Array2::zeros((n, m)),
             K_mm: Array2::zeros((m, m)),
             sigma: 1.0,
-            constraints
+            constraints : Constraints::new(constraints)
         }
     }
 

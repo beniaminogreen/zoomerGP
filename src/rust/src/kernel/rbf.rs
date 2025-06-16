@@ -25,7 +25,7 @@ impl ExpQuadKernel {
 
 impl Kernel for ExpQuadKernel {
     fn rec_constraint(&self ) -> Vec<Constraint> {
-        vec![Constraint::new_positive_exp(); self.n_params]
+        vec![Constraint::new_positive_sp(); self.n_params]
     }
 
     fn num_params(&self) -> usize {

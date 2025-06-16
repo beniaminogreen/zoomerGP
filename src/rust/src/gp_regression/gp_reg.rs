@@ -3,6 +3,8 @@ use crate::kernel::kernel::Kernel;
 use crate::dataset::{DataManager, UnitStandardizedDataset};
 use crate::dual_number::{Dual, DualArr};
 use crate::constraint::constraints::{Constraints};
+use crate::constraint::constraint::Constraint;
+
 
 use std::sync::Arc;
 
@@ -41,6 +43,12 @@ impl GPRegression {
             kernel.num_params()
         };
 
+        let kernel_constraints = kernel.rec_constraint();
+        let mut constraints = vec![Constraint::new_positive_sp()];
+        constraints.extend(kernel_constraints);
+
+
+
         Self{
             dataset,
             stale : true,
@@ -50,8 +58,8 @@ impl GPRegression {
             K_inv : Array2::zeros((n,n)),
             K : Array2::zeros((n,n)),
             sigma : 1.0,
-            constraints : Constraints::new(kernel.rec_constraint()),
-            kernel, 
+            constraints : Constraints::new(constraints),
+            kernel,
         }
     }
 }

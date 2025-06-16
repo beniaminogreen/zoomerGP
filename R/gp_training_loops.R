@@ -48,23 +48,22 @@ rgenoud_training <- function(fn, grad, num_params, sparse =F){
 
 }
 
-
-
-gp_taining_loop <- function(rust_gpr_object, sparse = F, training_method = c("cg","bfgs", "rgenoud", "coin")) {
-  gpr_model <- rust_gpr_object
-  num_params <- gpr_model$get_n_params()
-
-  constraints <- gpr_model$recommend_constraints()
-
+generate_fn_and_grad <- function(gpr_model, use_constraints = TRUE) {
   function_to_optimize <- function(params){
-    dual <- constraints$constrain(params)
-    transformed_params <- dual$get_x()
-    param_grad <- dual$get_grad()
+     if (use_constraints) {
+      constraints <- gpr_model$recommend_constraints()
+        dual <- constraints$constrain(params)
+        transformed_params <- dual$get_x()
+        param_grad <- dual$get_grad()
 
-    gpr_model$set_params(transformed_params)
+        gpr_model$set_params(transformed_params)
+    } else {
+        gpr_model$set_params(params)
+        param_grad <- rep(1, length(params))
+    }
     gpr_model$update()
-
     log_like_dual <- gpr_model$log_like(TRUE)
+
     list(
          real = log_like_dual$get_x(),
          grad = log_like_dual$get_grad() * param_grad
@@ -81,6 +80,23 @@ gp_taining_loop <- function(rust_gpr_object, sparse = F, training_method = c("cg
     memoized_func(param)$grad
   }
 
+  return(list(fn, grad))
+}
+
+
+gp_taining_loop <- function(
+  rust_gpr_object,
+  sparse = FALSE,
+  training_method = c("cg","bfgs", "rgenoud", "coin"),
+  use_constraints=TRUE
+) {
+
+  gpr_model <- rust_gpr_object
+  num_params <- gpr_model$get_n_params()
+
+  fn_and_grad <- generate_fn_and_grad(gpr_model, use_constraints)
+  fn <- fn_and_grad[[1]]
+  grad <- fn_and_grad[[2]]
 
   training_method <- match.arg(training_method)
   if (training_method == "bfgs") {

@@ -24,7 +24,7 @@ impl IndicatorKernel {
 
 impl Kernel for IndicatorKernel {
     fn rec_constraint(&self ) -> Vec<Constraint> {
-        vec![Constraint::new_positive_exp(); 1]
+        vec![Constraint::new_positive_sp(); 1]
     }
 
     fn num_params(&self) -> usize {

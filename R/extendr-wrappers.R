@@ -76,6 +76,8 @@ Constraints <- new.env(parent = emptyenv())
 
 Constraints$constrain <- function(params) .Call(wrap__Constraints__constrain, self, params)
 
+Constraints$len <- function() invisible(.Call(wrap__Constraints__len, self))
+
 #' @export
 `$.Constraints` <- function (self, name) { func <- Constraints[[name]]; environment(func) <- environment(); func }
 

@@ -1,1 +1,164 @@
-# zoomerGP
+
+# Gaussian Process Regression (GPR) in R
+
+`zoomerGP` is an R package that allows you to compose and fit Gaussian
+Process Regression models to data. The core inference code is
+implemented in Rust for speed, and approximations are available to allow
+users to fit models to large datasets (N \> 10,000). At the moment, only
+the gaussian likelihood is supported, but functionality to fit other
+likelihoods with Variational Inference is in development.
+
+## Supported Kernel Functions:
+
+The flagship feature of this package is a domain-specific language that
+helps you easily compose complicated kernels out of basic building
+blocks using a formula syntax.
+
+As an example, you can specify an rbf (gaussian) kernel that acts on a
+single variable, x, with the following syntax:
+
+``` r
+gaussian_process(y ~ rbf(x), data = data)
+```
+
+If you want to regress Y on an ARD-RBF kernel that acts on all columns
+of the input, you can simply use `rbf()`:
+
+``` r
+gaussian_process(y ~ rbf(), data = data)
+```
+
+This is because any kernel function called with no arguments will select
+all columns by default. Additionally, please note that all kernels are
+Automatic Relevance Determination (ARD) kernels, so a separate bandwidth
+is fit for each input dimension. This generally delivers superior
+performance in higher dimensions as it allows the regression to ‘zero
+out’ or not respond to input variables that do not matter.
+
+You can also combine kernels by adding and multiplying them with `+` and
+`*`. To give an example, we can fit a linear kernel times an RBF kernel
+with the following code:
+
+``` r
+gaussian_process(y ~ linear(x) * rbf(x), data = data)
+
+## adding in another two predictors, a and b that enter seperately
+gaussian_process(y ~ linear(x) * rbf(x) + rbf(a,b), data = data)
+```
+
+`+` and `*` can be arbitrarily chained to combine as many kernels as you
+would like. If you would like to fit a very complex function, consider
+using the spectral mixture (`spectral[0-9]()`) kernels, which can
+generalize any stationary covariance function. These are great for
+fitting complex, or periodic functions (esp. time series).
+
+You can also see a list of currently implemented kernels below. Formulas
+for the kernels and more features are forthcoming:
+
+| Kernel              |    DSL Name     |
+|:--------------------|:---------------:|
+| Squared Exponential |      rbf()      |
+| Spectral Mixture    | spectral[0-9]() |
+| Linear              |    linear()     |
+| Indicator           |   indicator()   |
+
+## Fitting to Large Datasets with Sparse Approximations.
+
+Gaussian Process Regression are computationally intensive, and generally
+takes $O(n^3)$ computations to fit. To allow the method to scale to
+large datasets, this package implements the projected process
+approximation as described in Rassmusen and Williams’s (2005) Gaussian
+Processes for Machine Learning. To turn this approximation on, use the
+`sparse=T` argument when fitting the gaussian processes please be aware
+that you may also need to change (reduce) the default value of the
+number of inducing points (`n_points`) for numerical stability.
+
+## Optimization Methods
+
+Currently, we the package supports 3 engines for hyperparameter
+optimization. `bfgs` is selected by default, but these can be changed
+using the training_method argument to `gaussian_process` function
+
+- `bfgs` - as implimented in the optim package in R. Will sometimes fail
+  to coverge, leading to an error.
+- `rgenoud` - as implimented in the `rgenoud package.` This is likely
+  the most robust optimizer as it avoids getting stuck in local minima,
+  but also the most computationally intensive.
+- `coin` - a learning-rate free algorithm that is implimented in Rust.
+  Seems to work well across a variety of problems, but can get stuck in
+  local minima.
+
+## Feature Roadmap
+
+The GPR package is a work in progress. This section summarizes the
+progress towards important feature goals we hope to include in the
+package:
+
+- [x] Type-2 ML estimation of hyperparameters (empirical Bayes) for
+  Gaussian likelihood.
+- [x] Sparse approximations to Gaussian likelihood
+- [x] Implement [spectral mixture
+  kernels](https://arxiv.org/pdf/1302.4245) to allow for more expressive
+  modelling.
+- [x] [COIN-optimizer](https://arxiv.org/abs/1705.07795) for fast
+  fitting
+- \[\] Implement derivatives of GP’s and average marginal effects
+  (A.M.E.’s)
+- \[\] Support for non-Gaussian likelihoods via variational Bayes.
+
+### Installing Rust
+
+If your operating system or version of R is not installed, you must have
+the [Rust compiler](https://www.rust-lang.org/tools/install) installed
+to compile this package from sources. After the package is compiled,
+Rust is no longer required, and can be safely uninstalled.
+
+#### Installing Rust on Linux or Mac:
+
+To install Rust on Linux or Mac, you can simply run the following
+snippet in your terminal.
+
+``` sh
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+#### Installing Rust on Windows:
+
+To install Rust on windows, you can use the Rust installation wizard,
+`rustup-init.exe`, found [at this
+site](https://forge.rust-lang.org/infra/other-installation-methods.html).
+Depending on your version of Windows, you may see an error that looks
+something like this:
+
+    error: toolchain 'stable-x86_64-pc-windows-gnu' is not installed
+
+In this case, you should run
+`rustup install stable-x86_64-pc_windows-gnu` to install the missing
+toolchain. If you’re missing another toolchain, simply type this in the
+place of `stable-x86_64-pc_windows-gnu` in the command above.
+
+### Installing Package from Github:
+
+Once you have rust installed Rust, you should be able to install the
+package with either the install.packages function as above, or using the
+`install_github` function from the `devtools` package or with the
+`pkg_install` function from the `pak` package.
+
+``` r
+## Install with devtools
+# install.packages("devtools")
+devtools::install_github("beniaminogreen/GPR")
+
+## Install with pak
+# install.packages("pak")
+pak::pkg_install("beniaminogreen/GPR")
+```
+
+### Loading The Package
+
+Once the package is installed, you can load it into memory as usual by
+typing:
+
+``` r
+library(zoomerGP)
+```

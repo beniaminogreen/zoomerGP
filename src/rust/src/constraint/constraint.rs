@@ -23,6 +23,10 @@ impl Constraint {
         Self::NoConstraint
     }
 
+    pub fn new_positive_sp() -> Self {
+        Self::PositiveSoftPlus(PositiveSoftPlusConstraint::new())
+    }
+
     pub fn constrain(&self, x: f64, gradient : bool) -> Dualf64 {
         match self {
             Self::PositiveExp(inner) => {inner.constrain(x,gradient)},
