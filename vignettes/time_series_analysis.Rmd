@@ -1,0 +1,65 @@
+---
+title: "Analysis of CO2 data with Gaussian Processes"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Analysis of CO2 data with Gaussian Processes}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This vignette shows how to perform a simplified version of the case study presented in Rassmusen and Williams (2006, p 119-121). 
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(zoomerGP)
+library(tibble)
+library(ggplot2)
+
+data <- data.frame(
+  year = (1:length(co2) - 1)/12 + 1959,
+  co2 = c(co2)
+)
+```
+
+
+```{r, out.width="100%",  fig.width=8, fig.height=5}
+data %>% 
+  ggplot(aes(x=year, y=co2)) +
+  geom_point()
+```
+
+Now we can begin analyzing the data using Gaussian Processes. Examining the data, and based on our understanding of the climate, it looks like this data can be well-described by a long-term trend plus a periodic component. 
+
+```{r}
+set.seed(1)
+gp_model <- gaussian_process(
+  co2 ~ periodic(year, periods = c(1.0)) + rbf(year), 
+  data = data
+  )
+gp_model
+```
+
+```{r, out.width="100%",  fig.width=8, fig.height=5}
+prediction_data <- data.frame(year = 1959 + seq(0,60, length.out = 500))
+prediction_data$preds <- predict(gp_model, prediction_data)[,1]
+prediction_data$pred_var <- predict(gp_model, prediction_data)[,3]
+
+prediction_data$ci_lo <- prediction_data$preds + 2*sqrt(prediction_data$pred_var)
+prediction_data$ci_hi <- prediction_data$preds - 2*sqrt(prediction_data$pred_var)
+
+ggplot() + 
+  geom_point(data = data, aes(x=year, y=co2)) + 
+  geom_line(data = prediction_data, aes(x=year, y=preds)) + 
+  geom_line(data = prediction_data, aes(x=year, y=ci_hi), linetype = 2, col = "darkgrey") + 
+  geom_line(data = prediction_data, aes(x=year, y=ci_lo), linetype = 2, col = "darkgrey") 
+
+  
+
+```
+

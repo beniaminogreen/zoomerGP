@@ -1,6 +1,4 @@
-use ndarray::Array1;
-use ndarray::ArrayView1;
-use crate::dual_number::{Dual, Dualf64, DualArr};
+use crate::dual_number::Dualf64;
 
 use super::positive::{PositiveExpConstraint, PositiveSoftPlusConstraint};
 

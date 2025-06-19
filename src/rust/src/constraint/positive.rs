@@ -1,5 +1,4 @@
 use crate::dual_number::Dualf64;
-use ndarray::Array1;
 
 #[derive(Clone, Debug)]
 pub struct PositiveExpConstraint{}

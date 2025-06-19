@@ -2,7 +2,6 @@ use extendr_api::prelude::*;
 use ndarray::Array1;
 
 use crate::constraint::constraints::Constraints;
-use crate::constraint::constraint::Constraint;
 use crate::gp_regression::gp_reg::GPRegression;
 
 

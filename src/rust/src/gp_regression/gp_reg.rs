@@ -1,7 +1,7 @@
 use crate::predict::PredictionOutput;
 use crate::kernel::kernel::Kernel;
 use crate::dataset::{DataManager, UnitStandardizedDataset};
-use crate::dual_number::{Dual, DualArr};
+use crate::dual_number::Dual;
 use crate::constraint::constraints::{Constraints};
 use crate::constraint::constraint::Constraint;
 

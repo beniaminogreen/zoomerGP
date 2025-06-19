@@ -1,20 +1,18 @@
-use crate::kernel::utils::fix_conditioning;
 use crate::kernel::utils::{fast_gradient_matrix, recusive_select_kernel};
 use crate::kernel::kernel::Kernel;
 use crate::dataset::{DataManager, UnitStandardizedDataset};
-use crate::dual_number::{Dual, DualArr};
+use crate::dual_number::Dual;
 use crate::constraint::constraints::{Constraints};
 use crate::constraint::constraint::{Constraint};
 
 use std::sync::Arc;
 
-use ndarray::{Array2, Axis, Array1, Array3, ArrayView2,s};
-use ndarray_linalg::solve::{Inverse, Determinant};
-use ndarray_linalg::{DeterminantC, Trace};
+use ndarray::{Array2, Axis, Array1, ArrayView2};
+use ndarray_linalg::solve::Inverse;
+use ndarray_linalg::Trace;
 use extendr_api::prelude::*;
 
 use std::f64::consts::PI;
-use crate::coin_optimizer::CoinOptimizer;
 use crate::kernel::utils::{parse_kernel_recursive, build_kernel_tree, stable_log_det};
 use crate::predict::PredictionOutput;
 
@@ -46,7 +44,7 @@ impl SparseGPRegression {
         y: &[f64],
         kernel_specification: List,
     ) -> Self {
-        let mut y = Array1::from(y.to_owned());
+        let y = Array1::from(y.to_owned());
         //let y_bar = y.iter().sum::<f64>() / (y.len() as f64);
         // y -= y_bar;
 
@@ -181,7 +179,7 @@ impl SparseGPRegression {
         let log_like = -0.5 * (data_fit_term + approx_log_det + normalizer);
 
         if !gradient {
-            return Dual::from((log_like))
+            return Dual::from(log_like)
         }
 
         let mut gradient: Array1<f64> = Array1::zeros(self.n_params);

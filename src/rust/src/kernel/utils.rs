@@ -11,9 +11,8 @@ use super::periodic::PeriodicKernel;
 use super::kernel::Kernel;
 use ndarray_linalg::cholesky::{Cholesky, UPLO};
 
-use std::collections::HashMap;
 
-use ndarray::{Array2, Axis, Array1, Array3, ArrayView2};
+use ndarray::{Array2, Axis, Array3, ArrayView2};
 use ndarray_linalg::SVD;
 use crate::dataset::DataManager;
 

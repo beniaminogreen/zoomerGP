@@ -2,8 +2,8 @@ Package: zoomerGP
 Title: What the Package Does (One Line, Title Case)
 Version: 0.0.0.9000
 Authors@R:
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+    person("Beniamino", "Green", , "beniamino.green@yale.edu", role = c("aut", "cre"),
+           comment = c(ORCID = "0009-0006-4501-597X"))
 Description: What the package does (one paragraph).
 License: GPL (>= 3)
 Encoding: UTF-8
@@ -17,8 +17,14 @@ Suggests:
     knitr,
     rmarkdown,
     nlopt,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    ggplot2,
+    tibble
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Imports: 
+    memoise,
+    rgenoud,
+    rlang,
     tidyselect
+URL: http://beniamino.org/zoomerGP/

@@ -1,5 +1,5 @@
 use super::kernel::Kernel;
-use ndarray::{ArrayView1, Array1, stack, Axis, concatenate};
+use ndarray::{ArrayView1, Axis, concatenate};
 use crate::dual_number::Dual;
 
 use crate::constraint::constraint::Constraint;
