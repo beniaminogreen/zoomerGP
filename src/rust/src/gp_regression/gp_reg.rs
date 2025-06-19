@@ -91,8 +91,6 @@ impl GPRegression {
             return
         }
 
-        dbg!(&self.kernel);
-
 
         let X = self.dataset.get_X();
 
@@ -121,7 +119,6 @@ impl GPRegression {
 
     #[allow(non_snake_case)]
     pub fn predict(&self,  prediction_points :ArrayView2<f64>, sub_kernel : Option<String>) -> PredictionOutput {
-        dbg!(self.sigma);
         let mut prediction_points = prediction_points.to_owned();
         prediction_points = self.dataset.scale_predictors(prediction_points.view());
 
@@ -165,8 +162,6 @@ impl GPRegression {
 
     #[allow(non_snake_case)]
     pub fn log_like(&self, gradient : bool)  -> Dual {
-        dbg!(&self.sigma);
-
         if self.stale {
             panic!("Tried to get log likelihood on non-updated model!");
         }

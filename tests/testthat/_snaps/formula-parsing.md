@@ -18,6 +18,9 @@
       $specification$cols
       [1] 1
       
+      $specification$kwargs
+      list()
+      
       
 
 ---
@@ -39,6 +42,9 @@
       
       $specification$cols
       [1] 1
+      
+      $specification$kwargs
+      list()
       
       
 
@@ -66,6 +72,9 @@
       $specification$left$cols
       [1] 1
       
+      $specification$left$kwargs
+      list()
+      
       
       $specification$right
       $specification$right$kernel
@@ -73,6 +82,9 @@
       
       $specification$right$cols
       [1] 1
+      
+      $specification$right$kwargs
+      list()
       
       
       
@@ -102,6 +114,9 @@
       $specification$left$cols
       [1] 1 2
       
+      $specification$left$kwargs
+      list()
+      
       
       $specification$right
       $specification$right$kernel
@@ -109,6 +124,9 @@
       
       $specification$right$cols
       [1] 1
+      
+      $specification$right$kwargs
+      list()
       
       
       
@@ -142,6 +160,9 @@
       $specification$left$left$cols
       [1] 1 2
       
+      $specification$left$left$kwargs
+      list()
+      
       
       $specification$left$right
       $specification$left$right$kernel
@@ -149,6 +170,9 @@
       
       $specification$left$right$cols
       [1] 1
+      
+      $specification$left$right$kwargs
+      list()
       
       
       
@@ -158,6 +182,9 @@
       
       $specification$right$cols
       [1] 1
+      
+      $specification$right$kwargs
+      list()
       
       
       
@@ -191,6 +218,9 @@
       $specification$left$left$cols
       [1] 1 2 3 4
       
+      $specification$left$left$kwargs
+      list()
+      
       
       $specification$left$right
       $specification$left$right$kernel
@@ -198,6 +228,9 @@
       
       $specification$left$right$cols
       [1] 1
+      
+      $specification$left$right$kwargs
+      list()
       
       
       
@@ -207,6 +240,9 @@
       
       $specification$right$cols
       [1] 1
+      
+      $specification$right$kwargs
+      list()
       
       
       

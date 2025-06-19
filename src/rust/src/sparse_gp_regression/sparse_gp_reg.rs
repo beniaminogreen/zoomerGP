@@ -139,8 +139,6 @@ impl SparseGPRegression {
     #[allow(non_snake_case)]
     fn log_like(&self, gradient : bool) -> Dual {
 
-        dbg!(&self.kernel);
-
         let X = self.dataset.get_X();
         let G = self.K_nm.t().dot(&self.K_nm);
         let mut Z = &self.K_mm + (G.clone() / self.sigma.powi(2));
@@ -157,9 +155,6 @@ impl SparseGPRegression {
         let K_mm_inv = self.K_mm.inv();
 
         if Z_inv.is_err() || K_mm_inv.is_err() || Z_log_det.is_err() || K_mm_log_det.is_err() {
-            dbg!(Z_inv.is_err());
-            dbg!(K_mm_inv.is_err());
-            dbg!(&self.kernel);
             return Dual::from((-99999999.9999, Array1::zeros(self.n_params)));
         }
 
