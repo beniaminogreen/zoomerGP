@@ -37,14 +37,23 @@ impl PositiveSoftPlusConstraint {
     }
 
     pub fn constrain(&self, x: f64, gradient : bool) -> Dualf64 {
-        if !gradient {
-            Dualf64::from((1.0 + x.exp()).ln())
+        // if the input is greater than f64, do not apply exp / softmax, as softmax(x) = x
+        let result = if x > 20.0 {
+            x
         } else {
-            let exp_x = x.exp();
-            let result = (1.0 + exp_x).ln();
-            let grad = exp_x / (1.0 + exp_x);
+            (1.0 + x.exp()).ln()
+        };
 
-            Dualf64::from((result, grad))
+        if !gradient {
+            Dualf64::from(result)
+        } else {
+            if x > 20.0 {
+                Dualf64::from((result, 1.0))
+            } else {
+                let exp_x = x.exp();
+                let grad = exp_x / (1.0 + exp_x);
+                Dualf64::from((result, grad))
+            }
         }
     }
 

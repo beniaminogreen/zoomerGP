@@ -54,7 +54,7 @@ impl<'a> CoinOptimizer<'a> {
         let mut iters_since_improvement = 0;
 
         for iter in 0..max_iter {
-            dbg!((iter,best_log_like));
+            //dbg!((iter,best_log_like));
 
             let mut transformed_W = self.W.to_owned();
             let mut param_transform_grads = Array1::ones(self.d);
@@ -98,11 +98,11 @@ impl<'a> CoinOptimizer<'a> {
 
                 let numerator = self.theta[i] * (self.L[i] + self.R[i]);
                 let denominator = self.L[i] * ((self.G[i] + self.L[i]).max(self.alpha * self.L[i]));
-                dbg!(numerator / denominator);
+                //dbg!(numerator / denominator);
                 self.W[i] = self.W_zero[i] + (numerator / denominator);
             }
 
-            dbg!(&self.R);
+            //dbg!(&self.R);
 
 
             bar.inc(1);

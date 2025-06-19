@@ -6,12 +6,16 @@ use super::linear::LinearKernel;
 use super::multiplicative::MultiplicativeKernel;
 use super::spectral_mixture::SpectralMixtureKernel;
 use super::rbf::ExpQuadKernel;
+use super::periodic::PeriodicKernel;
 
 use super::kernel::Kernel;
 use ndarray_linalg::cholesky::{Cholesky, UPLO};
 
+use std::collections::HashMap;
+
 use ndarray::{Array2, Axis, Array1, Array3, ArrayView2};
 use ndarray_linalg::SVD;
+use crate::dataset::DataManager;
 
 //#[allow(non_snake_case)]
 //pub fn matrix_inner_product(x: ArrayView2<f64>) -> Array2<f64> {
@@ -19,17 +23,17 @@ use ndarray_linalg::SVD;
 //    R.t().dot(&R)
 //}
 //
-pub fn get_cond_number(x: ArrayView2<f64>) -> f64 {
-    let svd = x.svd(false, false).unwrap();
+pub fn get_cond_number(x: ArrayView2<f64>) -> Result<f64> {
+    let svd = x.svd(false, false).map_err(|e| Error::Other(format!("SVD computation failed: {:?}", e)))?;
     let singular_values = svd.1;
     // The condition number is the ratio of the largest to the smallest singular value
-    singular_values[0] / singular_values[singular_values.len() - 1]
+    Ok(singular_values[0] / singular_values[singular_values.len() - 1])
 }
 
 pub fn fix_conditioning(x: &mut Array2<f64>) {
     let mut iter = -8;
     let mut cond_number = get_cond_number(x.view());
-    while cond_number.log10() > 4.0 && iter < -1 {
+    while cond_number.unwrap().log10() > 4.0 && iter < -1 {
         let amount_to_add = (10.0_f64).powi(iter);
         for i in 0..x.nrows() {
             x[[i, i]] += amount_to_add;
@@ -39,10 +43,10 @@ pub fn fix_conditioning(x: &mut Array2<f64>) {
     }
 }
 
-pub fn stable_log_det(x: ArrayView2<f64>) -> f64 {
-    let chol = x.cholesky(UPLO::Lower).expect("x not positive definite");
+pub fn stable_log_det(x: ArrayView2<f64>) -> Result<f64> {
+    let chol = x.cholesky(UPLO::Lower).map_err(|e| Error::Other(format!("Singular matrix when computing log det {:?}", e)))?;
     let log_det = 2.0 * chol.diag().map(|x| x.ln()).sum();
-    log_det
+    Ok(log_det)
 }
 
 //
@@ -65,7 +69,7 @@ pub fn fast_gradient_matrix(
     out
 }
 
-pub fn parse_kernel_recursive(kernel_specification: List) -> Box<dyn Kernel> {
+pub fn parse_kernel_recursive(kernel_specification: List, dataset : &dyn DataManager) -> Box<dyn Kernel> {
     let kernel_dict = kernel_specification.into_hashmap();
 
     if let Some(composite_type) = kernel_dict.get("type") {
@@ -73,12 +77,12 @@ pub fn parse_kernel_recursive(kernel_specification: List) -> Box<dyn Kernel> {
         let right: List = List::try_from(kernel_dict.get("right").unwrap()).unwrap();
         match composite_type.as_str().unwrap() {
             "multiply" => Box::new(MultiplicativeKernel::new(
-                parse_kernel_recursive(left),
-                parse_kernel_recursive(right),
+                parse_kernel_recursive(left, dataset),
+                parse_kernel_recursive(right, dataset),
             )),
             "add" => Box::new(CompositeKernel::new(vec![
-                parse_kernel_recursive(left),
-                parse_kernel_recursive(right),
+                parse_kernel_recursive(left, dataset),
+                parse_kernel_recursive(right, dataset),
             ])),
             _ => panic!("Supplied an unsupported type of composite kernel"),
         }
@@ -93,6 +97,8 @@ pub fn parse_kernel_recursive(kernel_specification: List) -> Box<dyn Kernel> {
             .map(|x| (x - 1) as usize)
             .collect();
 
+        let kwargs = List::try_from(kernel_dict.get("kwargs").unwrap()).unwrap().into_hashmap();
+
         match ktype {
             "rbf" => Box::new(ExpQuadKernel::new(cols)),
             "linear" => Box::new(LinearKernel::new(cols)),
@@ -106,6 +112,7 @@ pub fn parse_kernel_recursive(kernel_specification: List) -> Box<dyn Kernel> {
             "spectral3" => Box::new(SpectralMixtureKernel::new(cols, 3)),
             "spectral4" => Box::new(SpectralMixtureKernel::new(cols, 4)),
             "spectral5" => Box::new(SpectralMixtureKernel::new(cols, 5)),
+            "periodic" => Box::new(PeriodicKernel::new(cols, kwargs, dataset)),
             _ => panic!("Invalid Kernel Type"),
         }
     }

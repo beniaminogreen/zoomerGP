@@ -7,3 +7,4 @@ pub mod rbf;
 pub mod spectral_mixture;
 pub mod indicator;
 pub mod utils;
+mod periodic;

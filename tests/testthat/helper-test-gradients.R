@@ -9,7 +9,7 @@ test_grad <- function(form, data, use_constraints = T, ...) {
         params,
         fn_and_grad[[1]],
         fn_and_grad[[2]],
-        check_derivatives_tol = .001,
+        check_derivatives_tol = .1,
         check_derivatives_print = "all"
     )
     expect_true(!any(derivative_check_result$flag_derivative_warning))

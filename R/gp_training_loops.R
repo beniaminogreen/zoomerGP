@@ -4,9 +4,9 @@ clip_gradient <- function(grad, max_grad = 10) {
 
 bfgs_cg_training <- function(fn, grad, num_params, sparse=F, bfgs = T) {
   if(sparse){
-    control = list(fnscale = -1, factr = 1e11, maxit = 300, lmm=50)
+    control = list(fnscale = -1, factr = 1e14, maxit = 500, lmm=50)
   } else {
-    control =  list(fnscale = -1, lmm=30)
+    control =  list(fnscale = -1, lmm=30, maxit = 500)
   }
 
   if (bfgs) {
@@ -16,7 +16,7 @@ bfgs_cg_training <- function(fn, grad, num_params, sparse=F, bfgs = T) {
   }
 
   optim_output <- stats::optim(
-    stats::rexp(num_params, .5),
+    stats::runif(num_params,-4,.5),
     fn=fn,
     gr=grad,
     method = method,
@@ -38,7 +38,7 @@ rgenoud_training <- function(fn, grad, num_params, sparse =F){
     # Domains = domain,
     max = T,
     pop.size = 130,
-    max.generations = 90,
+    max.generations = 100,
     boundary.enforcement = 2,
     solution.tolerance=0.2,
     print.level =  0,
@@ -51,7 +51,7 @@ rgenoud_training <- function(fn, grad, num_params, sparse =F){
 generate_fn_and_grad <- function(gpr_model, use_constraints = TRUE) {
   function_to_optimize <- function(params){
      if (use_constraints) {
-      constraints <- gpr_model$recommend_constraints()
+        constraints <- gpr_model$recommend_constraints()
         dual <- constraints$constrain(params)
         transformed_params <- dual$get_x()
         param_grad <- dual$get_grad()
@@ -97,23 +97,32 @@ gp_taining_loop <- function(
   fn_and_grad <- generate_fn_and_grad(gpr_model, use_constraints)
   fn <- fn_and_grad[[1]]
   grad <- fn_and_grad[[2]]
-
+  
   training_method <- match.arg(training_method)
-  if (training_method == "bfgs") {
-    optim_output <- bfgs_cg_training(fn, grad, num_params, sparse, T)
-    gpr_model$set_params(optim_output)
-  } else if (training_method == "cg") {
-    optim_output <- bfgs_cg_training(fn, grad, num_params, sparse,F)
-    gpr_model$set_params(optim_output)
-  } else if (training_method == "rgenoud") {
-    optim_output <- rgenoud_training(fn, grad, num_params, sparse)
-    gpr_model$set_params(optim_output)
-  } else {
+  
+  if (training_method == "coin") {
     gpr_model$optimize(1000, T)
+  } else { 
+    if (training_method == "bfgs") {
+      optim_output <- bfgs_cg_training(fn, grad, num_params, sparse, T)
+    } else if (training_method == "cg") {
+      optim_output <- bfgs_cg_training(fn, grad, num_params, sparse,F)
+    } else if (training_method == "rgenoud") {
+      optim_output <- rgenoud_training(fn, grad, num_params, sparse)
+    } 
+    
+    if (!use_constraints) {
+      gpr_model$set_params(optim_output)
+    } else {
+      constraints <- gpr_model$recommend_constraints()
+      dual <- constraints$constrain(optim_output)
+      gpr_model$set_params(dual$get_x());
+    }
+    
+    gpr_model$update()
   }
 
-  gpr_model$update()
-  # gpr_model$ll <- gpr_model$log_like(FALSE)$get_x()
+  
 
   return(gpr_model)
 }

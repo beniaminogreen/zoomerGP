@@ -91,6 +91,8 @@ impl GPRegression {
             return
         }
 
+        dbg!(&self.kernel);
+
 
         let X = self.dataset.get_X();
 
@@ -119,6 +121,7 @@ impl GPRegression {
 
     #[allow(non_snake_case)]
     pub fn predict(&self,  prediction_points :ArrayView2<f64>, sub_kernel : Option<String>) -> PredictionOutput {
+        dbg!(self.sigma);
         let mut prediction_points = prediction_points.to_owned();
         prediction_points = self.dataset.scale_predictors(prediction_points.view());
 
@@ -162,6 +165,7 @@ impl GPRegression {
 
     #[allow(non_snake_case)]
     pub fn log_like(&self, gradient : bool)  -> Dual {
+        dbg!(&self.sigma);
 
         if self.stale {
             panic!("Tried to get log likelihood on non-updated model!");
@@ -240,7 +244,8 @@ impl GPRegression {
             gradient[[i]] = 0.5 * (lhs - trace);
         }
 
-        Dual::from((log_likelihood,gradient))
+        let out = Dual::from((log_likelihood,gradient));
+        return out
 
     }
 
@@ -259,8 +264,8 @@ impl GPRegression {
         let y = Array1::from(y.to_owned());
         let x = x.to_owned();
 
-        let kernel = parse_kernel_recursive(kernel_specification);
         let dataset = Arc::new(UnitStandardizedDataset::new(x,y.clone()));
+        let kernel = parse_kernel_recursive(kernel_specification, dataset.as_ref());
 
         Self::new(kernel, dataset, y, noiseless)
     }

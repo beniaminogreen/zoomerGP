@@ -50,10 +50,11 @@ impl SparseGPRegression {
         //let y_bar = y.iter().sum::<f64>() / (y.len() as f64);
         // y -= y_bar;
 
-        let kernel = parse_kernel_recursive(kernel_specification);
 
         let X = X.to_owned();
         let dataset = Arc::new(UnitStandardizedDataset::new(X,y.clone()));
+
+        let kernel = parse_kernel_recursive(kernel_specification, dataset.as_ref());
 
         let X_inducing = dataset.scale_predictors(X_inducing);
 
@@ -138,6 +139,8 @@ impl SparseGPRegression {
     #[allow(non_snake_case)]
     fn log_like(&self, gradient : bool) -> Dual {
 
+        dbg!(&self.kernel);
+
         let X = self.dataset.get_X();
         let G = self.K_nm.t().dot(&self.K_nm);
         let mut Z = &self.K_mm + (G.clone() / self.sigma.powi(2));
@@ -153,15 +156,17 @@ impl SparseGPRegression {
         let Z_inv = Z.inv();
         let K_mm_inv = self.K_mm.inv();
 
-        if Z_inv.is_err() || K_mm_inv.is_err() {
+        if Z_inv.is_err() || K_mm_inv.is_err() || Z_log_det.is_err() || K_mm_log_det.is_err() {
             dbg!(Z_inv.is_err());
             dbg!(K_mm_inv.is_err());
             dbg!(&self.kernel);
-            return Dual::from((f64::NEG_INFINITY, Array1::zeros(self.n_params)));
+            return Dual::from((-99999999.9999, Array1::zeros(self.n_params)));
         }
 
         let Z_inv = Z_inv.unwrap();
         let K_mm_inv = K_mm_inv.unwrap();
+        let Z_log_det = Z_log_det.unwrap();
+        let K_mm_log_det = K_mm_log_det.unwrap();
 
         // Calculate the Approximate Determinant Based on the PP approximation
         let mut approx_log_det = 2.0 * (self.n as f64) * (self.sigma.ln());

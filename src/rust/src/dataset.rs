@@ -5,6 +5,7 @@ use crate::dual_number::DualArr;
 pub trait DataManager {
     fn outcome(&self) -> ArrayView1<f64>;
     fn get_X(&self) -> ArrayView2<f64>;
+    fn get_x_scale_factor(&self) -> Array1<f64>;
     fn unscale_outcome(&self, y : ArrayView1<f64>, gradient : bool)  -> DualArr;
     fn scale_outcome(&self, y : ArrayView1<f64>, gradient : bool)  -> DualArr;
     fn shape(&self)  -> (usize,usize);
@@ -61,6 +62,9 @@ impl UnitStandardizedDataset {
 }
 
 impl DataManager for UnitStandardizedDataset {
+    fn get_x_scale_factor(&self) -> Array1<f64> {
+        1.0/self.ranges.clone()
+    }
     fn outcome(&self) -> ArrayView1<f64> {
         self.scaled_y.view()
     }

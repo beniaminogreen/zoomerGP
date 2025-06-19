@@ -35,9 +35,16 @@ r_parse_formula <- function(form, data) {
 
                 # Find the columns in the dataset that are referenced
                 cols <- c()
+                arg_names <- rlang::call_args_names(x)
                 args <- rlang::call_args(x)
-                for (arg in args) {
-                    cols <- c(cols, tidyselect::eval_select(arg, data))
+                
+                kwargs <- list()
+                for (i in seq(args)) {
+                    if (arg_names[[i]] == ""){
+                      cols <- c(cols, tidyselect::eval_select(args[[i]], data))
+                    } else {
+                      kwargs[arg_names[[i]]] <- as.numeric(eval(args[[i]]))
+                    }
                 }
                 cols <- cols[cols != outcome_index]
 
@@ -50,7 +57,8 @@ r_parse_formula <- function(form, data) {
 
                 list(
                      kernel = rlang::call_name(x),
-                     cols = cols_in_array
+                     cols = cols_in_array, 
+                     kwargs = kwargs
                 )
               }
         },

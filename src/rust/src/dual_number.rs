@@ -73,7 +73,9 @@ impl From<(f64, f64)> for Dualf64 {
     }
 }
 
+
 #[extendr]
+#[derive(Debug)]
 pub struct Dual{
     pub x : f64,
     pub grad : Option<Array1<f64>>
