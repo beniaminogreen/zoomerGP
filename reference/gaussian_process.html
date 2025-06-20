@@ -74,6 +74,17 @@ approximation to speed up training. Recommended for N&gt;500.</p></dd>
 approximation. Defaults to 5. If set too large, may cause numerical
 stability issues when calculating the gradient of the marginal likelihood.</p></dd>
 
+
+<dt id="arg-training-method">training_method<a class="anchor" aria-label="anchor" href="#arg-training-method"></a></dt>
+<dd><p>one of 'bfgs', 'cg' (conjugate gradient),
+'rgenoud' (genetic optimization using derivatives), or "coin" (coin betting).
+The method used to optimize the marginal likelihood (default BFGS).</p></dd>
+
+
+<dt id="arg-noise">noise<a class="anchor" aria-label="anchor" href="#arg-noise"></a></dt>
+<dd><p>whether to fit a GP assuming function values are observed with noise (default TRUE).
+Setting FALSE is only available when sparse = F.</p></dd>
+
 </dl></div>
 
     <div class="section level2">

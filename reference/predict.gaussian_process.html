@@ -49,7 +49,11 @@
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg-newdata">newdata<a class="anchor" aria-label="anchor" href="#arg-newdata"></a></dt>
+<dl><dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
+<dd><p>An object for which predictions are desired.</p></dd>
+
+
+<dt id="arg-newdata">newdata<a class="anchor" aria-label="anchor" href="#arg-newdata"></a></dt>
 <dd><p>a new data set to generate predictions for. Must have all of
 the predictor columns of the original data set or an error will be returned.</p></dd>
 
@@ -60,6 +64,10 @@ predictions for. This can be useful if you are (for example) attempting to
 isolate a specific signal from a data set such as a periodic component from a
 time series.  Use the print method of the Gaussian process to determine the
 labels for the individual kernels.</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>additional arguments (ignored)</p></dd>
 
 </dl></div>
 

@@ -3,7 +3,7 @@ pkgdown: 2.1.3
 pkgdown_sha: ~
 articles:
   time_series_analysis: time_series_analysis.html
-last_built: 2025-06-19T20:11Z
+last_built: 2025-06-20T19:46Z
 urls:
   reference: http://beniamino.org/zoomerGP/reference
   article: http://beniamino.org/zoomerGP/articles
