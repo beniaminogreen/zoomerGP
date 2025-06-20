@@ -8,3 +8,4 @@ pub mod spectral_mixture;
 pub mod indicator;
 pub mod utils;
 mod periodic;
+mod if_kernel;

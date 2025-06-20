@@ -7,6 +7,8 @@ use super::multiplicative::MultiplicativeKernel;
 use super::spectral_mixture::SpectralMixtureKernel;
 use super::rbf::ExpQuadKernel;
 use super::periodic::PeriodicKernel;
+use super::if_kernel::IfKernel;
+
 
 use super::kernel::Kernel;
 use ndarray_linalg::cholesky::{Cholesky, UPLO};
@@ -106,6 +108,7 @@ pub fn parse_kernel_recursive(kernel_specification: List, dataset : &dyn DataMan
                 Box::new(ExpQuadKernel::new(cols)),
             )),
             "id" => Box::new(IndicatorKernel::new(cols)),
+            "mask" => Box::new(IfKernel::new(cols)),
             "spectral1" => Box::new(SpectralMixtureKernel::new(cols, 1)),
             "spectral2" => Box::new(SpectralMixtureKernel::new(cols, 2)),
             "spectral3" => Box::new(SpectralMixtureKernel::new(cols, 3)),
