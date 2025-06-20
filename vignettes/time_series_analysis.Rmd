@@ -59,7 +59,6 @@ ggplot() +
   geom_line(data = prediction_data, aes(x=year, y=ci_hi), linetype = 2, col = "darkgrey") + 
   geom_line(data = prediction_data, aes(x=year, y=ci_lo), linetype = 2, col = "darkgrey") 
 
-  
 
 ```
 

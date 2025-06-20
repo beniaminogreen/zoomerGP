@@ -3,13 +3,16 @@ instantiate_gp <- function(form, data, sparse = F, n_points = 50, noise = T) {
   outcome <- as.numeric(data[[parsed_formula$outcome]])
   colnames <- names(data)[parsed_formula$columns]
   specification <- parsed_formula$specification
-
+  
+  X <- as.matrix(data[,colnames])
+  colnames(X) <- colnames
+  
   x <- list(
     y = outcome,
     n = length(outcome),
     formula = form,
     colnames = colnames,
-    X = as.matrix(data[,colnames]),
+    X = X,
     specification = specification,
     sparse = sparse
   )
@@ -39,6 +42,13 @@ instantiate_gp <- function(form, data, sparse = F, n_points = 50, noise = T) {
 #' @param n_points The number of inducing points used for the projected process
 #' approximation. Defaults to 5. If set too large, may cause numerical
 #' stability issues when calculating the gradient of the marginal likelihood.
+#'
+#' @param noise whether to fit a GP assuming function values are observed with noise (default TRUE). 
+#' Setting FALSE is only available when sparse = F. 
+#' 
+#' @param training_method one of 'bfgs', 'cg' (conjugate gradient), 
+#' 'rgenoud' (genetic optimization using derivatives), or "coin" (coin betting). 
+#' The method used to optimize the marginal likelihood (default BFGS). 
 #'
 #' @examples
 #' \donttest{

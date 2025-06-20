@@ -1,9 +1,13 @@
-#' Print information about a gaussian process
+#' Print information about a Gaussian Process
+#' 
+#' @param x Gaussian Process object
+#'
+#' @param ... additional arguments (ignored)
 #'
 #' @method print gaussian_process
 #' @export
 print.gaussian_process <- function(x, ...) {
-  if (x$sparse) {
+  if (x$sparse) {-
     cat(sprintf("A Gaussian Process model with %d observations\n", x$n))
     cat("Using the projected process approximation\n")
   } else {
@@ -19,6 +23,8 @@ print.gaussian_process <- function(x, ...) {
 #'
 #' @method predict gaussian_process
 #' 
+#' @param object An object for which predictions are desired.
+#' 
 #' @param newdata a new data set to generate predictions for. Must have all of 
 #' the predictor columns of the original data set or an error will be returned. 
 #' 
@@ -28,7 +34,9 @@ print.gaussian_process <- function(x, ...) {
 #' time series.  Use the print method of the Gaussian process to determine the 
 #' labels for the individual kernels. 
 #' 
+#' @param ... additional arguments (ignored)
 #' 
+#' @importFrom stats predict
 #' @export
 predict.gaussian_process <- function(object, newdata = NULL, kernel_str=NA,...) {
   if (is.null(newdata)) {
@@ -47,4 +55,19 @@ predict.gaussian_process <- function(object, newdata = NULL, kernel_str=NA,...) 
   colnames(out) <- c("prediction", "f_var", "y_var")
    
   return(out)
+}
+
+
+#' Get Residuals for Gaussian Process
+#'
+#' @method residuals gaussian_process
+#' 
+#' @param object An object for which residuals are desired.
+#' 
+#' @param ... additional arguments (ignored)
+#' 
+#' @importFrom stats residuals
+#' @export
+residuals.gaussian_process <- function(object,...) {
+  object$y - predict(object)[,1]
 }

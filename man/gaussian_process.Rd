@@ -25,6 +25,13 @@ approximation to speed up training. Recommended for N>500.}
 \item{n_points}{The number of inducing points used for the projected process
 approximation. Defaults to 5. If set too large, may cause numerical
 stability issues when calculating the gradient of the marginal likelihood.}
+
+\item{training_method}{one of 'bfgs', 'cg' (conjugate gradient),
+'rgenoud' (genetic optimization using derivatives), or "coin" (coin betting).
+The method used to optimize the marginal likelihood (default BFGS).}
+
+\item{noise}{whether to fit a GP assuming function values are observed with noise (default TRUE).
+Setting FALSE is only available when sparse = F.}
 }
 \description{
 Fit a Gaussian process in R

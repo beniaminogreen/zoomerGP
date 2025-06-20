@@ -7,6 +7,8 @@
 \method{predict}{gaussian_process}(object, newdata = NULL, kernel_str = NA, ...)
 }
 \arguments{
+\item{object}{An object for which predictions are desired.}
+
 \item{newdata}{a new data set to generate predictions for. Must have all of
 the predictor columns of the original data set or an error will be returned.}
 
@@ -15,6 +17,8 @@ predictions for. This can be useful if you are (for example) attempting to
 isolate a specific signal from a data set such as a periodic component from a
 time series.  Use the print method of the Gaussian process to determine the
 labels for the individual kernels.}
+
+\item{...}{additional arguments (ignored)}
 }
 \description{
 Predict Function Values at a Test Point

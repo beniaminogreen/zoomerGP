@@ -2,10 +2,15 @@
 % Please edit documentation in R/gaussian_process_methods.R
 \name{print.gaussian_process}
 \alias{print.gaussian_process}
-\title{Print information about a gaussian process}
+\title{Print information about a Gaussian Process}
 \usage{
 \method{print}{gaussian_process}(x, ...)
 }
+\arguments{
+\item{x}{Gaussian Process object}
+
+\item{...}{additional arguments (ignored)}
+}
 \description{
-Print information about a gaussian process
+Print information about a Gaussian Process
 }
