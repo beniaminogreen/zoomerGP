@@ -1,4 +1,14 @@
 url: http://beniamino.org/zoomerGP/
 template:
   bootstrap: 5
+reference: 
+  - title: Fit Gaussian Processes
+    contents: 
+      - gaussian_process
+  - title: Gaussian Process Methods
+    contents: 
+      - predict.gaussian_process
+      - plot.gaussian_process
+      - residuals.gaussian_process
+      - print.gaussian_process
 

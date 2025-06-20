@@ -1,10 +1,10 @@
 Package: zoomerGP
-Title: What the Package Does (One Line, Title Case)
+Title: Fast, composable Gaussian Processes in R. 
 Version: 0.0.0.9000
 Authors@R:
     person("Beniamino", "Green", , "beniamino.green@yale.edu", role = c("aut", "cre"),
            comment = c(ORCID = "0009-0006-4501-597X"))
-Description: What the package does (one paragraph).
+Description: Fast, composable Gaussian Processes in R. 
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -18,11 +18,11 @@ Suggests:
     rmarkdown,
     nlopt,
     testthat (>= 3.0.0),
-    ggplot2,
     tibble
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Imports: 
+    ggplot2,
     memoise,
     rgenoud,
     rlang,

@@ -4,6 +4,7 @@
 ^src/Makevars$
 ^src/Makevars\.win$
 ^\\.idea/
+^.*\.idea$
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
