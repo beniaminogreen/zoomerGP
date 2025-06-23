@@ -12,6 +12,12 @@ NULL
 
 GPRegression <- new.env(parent = emptyenv())
 
+GPRegression$display_kernel <- function() .Call(wrap__GPRegression__display_kernel, self)
+
+GPRegression$optimize <- function(max_iter, use_constraints) invisible(.Call(wrap__GPRegression__optimize, self, max_iter, use_constraints))
+
+GPRegression$r_new <- function(x, y, kernel_specification, noise) .Call(wrap__GPRegression__r_new, x, y, kernel_specification, noise)
+
 GPRegression$get_n_params <- function() .Call(wrap__GPRegression__get_n_params, self)
 
 GPRegression$recommend_constraints <- function() .Call(wrap__GPRegression__recommend_constraints, self)
@@ -23,12 +29,6 @@ GPRegression$update <- function() invisible(.Call(wrap__GPRegression__update, se
 GPRegression$predict <- function(prediction_points, sub_kernel) .Call(wrap__GPRegression__predict, self, prediction_points, sub_kernel)
 
 GPRegression$log_like <- function(gradient) .Call(wrap__GPRegression__log_like, self, gradient)
-
-GPRegression$display_kernel <- function() .Call(wrap__GPRegression__display_kernel, self)
-
-GPRegression$optimize <- function(max_iter, use_constraints) invisible(.Call(wrap__GPRegression__optimize, self, max_iter, use_constraints))
-
-GPRegression$r_new <- function(x, y, kernel_specification, noiseless) .Call(wrap__GPRegression__r_new, x, y, kernel_specification, noiseless)
 
 #' @export
 `$.GPRegression` <- function (self, name) { func <- GPRegression[[name]]; environment(func) <- environment(); func }
@@ -94,8 +94,6 @@ SparseGPRegression$set_params <- function(params) invisible(.Call(wrap__SparseGP
 
 SparseGPRegression$recommend_constraints <- function() .Call(wrap__SparseGPRegression__recommend_constraints, self)
 
-SparseGPRegression$display_kernel <- function() .Call(wrap__SparseGPRegression__display_kernel, self)
-
 SparseGPRegression$update <- function() invisible(.Call(wrap__SparseGPRegression__update, self))
 
 SparseGPRegression$log_like <- function(gradient) .Call(wrap__SparseGPRegression__log_like, self, gradient)
@@ -121,6 +119,20 @@ PredictionOutput$get_pred_var <- function() .Call(wrap__PredictionOutput__get_pr
 
 #' @export
 `[[.PredictionOutput` <- `$.PredictionOutput`
+
+CoinSVGP <- new.env(parent = emptyenv())
+
+CoinSVGP$r_new <- function(x, y, kernel_specification, noise, n_particles) .Call(wrap__CoinSVGP__r_new, x, y, kernel_specification, noise, n_particles)
+
+CoinSVGP$run <- function(iter) invisible(.Call(wrap__CoinSVGP__run, self, iter))
+
+CoinSVGP$predict <- function(prediction_points, sub_kernel) .Call(wrap__CoinSVGP__predict, self, prediction_points, sub_kernel)
+
+#' @export
+`$.CoinSVGP` <- function (self, name) { func <- CoinSVGP[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.CoinSVGP` <- `$.CoinSVGP`
 
 
 # nolint end
