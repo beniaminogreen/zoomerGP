@@ -30,6 +30,10 @@ impl PositiveExpConstraint {
 #[derive(Clone, Debug)]
 pub struct PositiveSoftPlusConstraint{}
 
+
+
+const CLIP : f64 = 0.000001;
+
 impl PositiveSoftPlusConstraint {
     pub fn new() -> Self {
         Self{}
@@ -40,7 +44,7 @@ impl PositiveSoftPlusConstraint {
         let result = if x > 20.0 {
             x
         } else {
-            (1.0 + x.exp()).ln()
+            (1.0 + x.exp()).ln() + CLIP
         };
 
         if !gradient {

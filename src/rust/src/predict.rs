@@ -4,7 +4,7 @@ use ndarray::Array1;
 
 #[extendr]
 pub struct PredictionOutput {
-    response : Array1<f64>,
+    pub response : Array1<f64>,
     f_var : Option<Array1<f64>>,
     pred_var : Option<Array1<f64>>
 }

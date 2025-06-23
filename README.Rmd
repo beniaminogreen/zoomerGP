@@ -13,9 +13,7 @@ library(tidyverse)
 `zoomerGP` is an R package that allows you to compose and fit Gaussian Process
 Regression models to data. The core inference code is implemented in Rust for
 speed, and approximations are available to allow users to fit models to large
-datasets (N > 10,000). At the moment, only the gaussian likelihood is
-supported, but functionality to fit other likelihoods with Variational
-Inference is in development.
+datasets (N > 10,000). 
 
 ## Supported Kernel Functions:
 

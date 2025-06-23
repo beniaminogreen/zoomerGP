@@ -24,8 +24,9 @@ impl Constraints{
         let mut out_params = Array1::zeros(params.len());
         let mut out_grads = Array1::zeros(params.len());
 
-        assert!(params.len() == self.constraints.len());
-
+        if params.len() != self.constraints.len() {
+            panic!("expected parameter input of length {}, got input of length {}", self.constraints.len(), params.len());
+        }
         for (i, param) in params.iter().enumerate() {
             let constrained_param = self.constraints[i].constrain(*param, true);
 

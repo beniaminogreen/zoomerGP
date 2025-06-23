@@ -6,6 +6,7 @@ mod dataset;
 mod coin_optimizer;
 mod sparse_gp_regression;
 mod predict;
+mod coin_svgd;
 //mod regression_manager;
 
 use extendr_api::prelude::*;
@@ -20,4 +21,5 @@ extendr_module! {
     use constraint;
     use sparse_gp_regression;
     use predict;
+    use coin_svgd;
 }

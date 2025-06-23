@@ -40,7 +40,7 @@ impl GPRegression {
         let n_params = if noise {
             kernel.num_params() + 1
         } else {
-            kernel.num_params()
+            kernel.num_params() 
         };
 
         let kernel_constraints = kernel.rec_constraint();
@@ -255,14 +255,14 @@ impl GPRegression {
 
 
 
-    pub fn r_new(x: ArrayView2<f64>, y: &[f64], kernel_specification: List, noiseless: bool) -> Self {
+    pub fn r_new(x: ArrayView2<f64>, y: &[f64], kernel_specification: List, noise: bool) -> Self {
         let y = Array1::from(y.to_owned());
         let x = x.to_owned();
 
         let dataset = Arc::new(UnitStandardizedDataset::new(x,y.clone()));
         let kernel = parse_kernel_recursive(kernel_specification, dataset.as_ref());
 
-        Self::new(kernel, dataset, y, noiseless)
+        Self::new(kernel, dataset, y, noise)
     }
 
 }
