@@ -4,6 +4,8 @@ use ndarray::Array1;
 use crate::constraint::constraints::Constraints;
 use crate::gp_regression::gp_reg::GPRegression;
 
+use crate::model::Model;
+
 
 use indicatif::ProgressBar;
 

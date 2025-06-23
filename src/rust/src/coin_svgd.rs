@@ -8,6 +8,7 @@ use rand::rng;
 use rand_distr::{Normal, Distribution};
 
 use ndarray::{ArrayView1, Array1, Array2, ArrayView2, Axis};
+use crate::model::Model;
 use crate::predict::PredictionOutput;
 
 // implements Algorithm 6 from
@@ -23,7 +24,7 @@ struct CoinSVGP{
     G : Array2<f64>,
     H : Array2<f64>,
     R : Array2<f64>,
-    model : GPRegression,
+    model : Box<dyn Model>,
 }
 
 fn kernel_and_repulsion(lambdas : ArrayView2<f64>) -> (Array2<f64>, Array2<f64>){
@@ -93,7 +94,7 @@ impl CoinSVGP{
             L,
             n,
             d,
-            model
+            model : Box::new(model)
         }
     }
 

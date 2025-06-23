@@ -7,6 +7,7 @@ mod coin_optimizer;
 mod sparse_gp_regression;
 mod predict;
 mod coin_svgd;
+mod model;
 //mod regression_manager;
 
 use extendr_api::prelude::*;
