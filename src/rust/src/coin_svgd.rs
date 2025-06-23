@@ -1,5 +1,4 @@
 use extendr_api::prelude::*;
-use crate::constraint::constraints::Constraints;
 use crate::gp_regression::gp_reg::GPRegression;
 
 use std::ops::{AddAssign, Neg};
@@ -7,7 +6,7 @@ use std::ops::{AddAssign, Neg};
 use rand::rng;
 use rand_distr::{Normal, Distribution};
 
-use ndarray::{ArrayView1, Array1, Array2, ArrayView2, Axis};
+use ndarray::{Array1, Array2, ArrayView2, Axis};
 use crate::model::Model;
 use crate::predict::PredictionOutput;
 

@@ -1,21 +1,17 @@
-use crate::predict::PredictionOutput;
 use crate::kernel::kernel::Kernel;
 use crate::dataset::{DataManager, UnitStandardizedDataset};
-use crate::dual_number::Dual;
 use crate::constraint::constraints::{Constraints};
 use crate::constraint::constraint::Constraint;
 
 
 use std::sync::Arc;
 
-use ndarray::{Array2, Axis, Array1, Array3, ArrayView2};
-use ndarray_linalg::solve::{Inverse, Determinant};
+use ndarray::{Array2, Array1, ArrayView2};
 
 use extendr_api::prelude::*;
 
-use std::f64::consts::PI;
 use crate::coin_optimizer::CoinOptimizer;
-use crate::kernel::utils::{build_kernel_tree, parse_kernel_recursive, recusive_select_kernel};
+use crate::kernel::utils::{build_kernel_tree, parse_kernel_recursive};
 
 #[allow(non_snake_case)]
 #[extendr]

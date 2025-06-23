@@ -1,12 +1,9 @@
 use std::f64::consts::PI;
-use std::sync::Arc;
-use extendr_api::{extendr, extendr_module, List};
+use extendr_api::{extendr, extendr_module};
 use ndarray::{Array1, Array2, ArrayView2, Axis};
-use crate::constraint::constraint::Constraint;
 use crate::constraint::constraints::Constraints;
-use crate::dataset::UnitStandardizedDataset;
 use crate::dual_number::Dual;
-use crate::kernel::utils::{build_kernel_tree, fast_gradient_matrix, parse_kernel_recursive, recusive_select_kernel, stable_log_det};
+use crate::kernel::utils::{fast_gradient_matrix, recusive_select_kernel, stable_log_det};
 use crate::predict::PredictionOutput;
 use crate::sparse_gp_regression::sparse_gp_reg::SparseGPRegression;
 

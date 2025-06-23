@@ -3,7 +3,7 @@ use ndarray::{Array1, Array2, Array3, ArrayView2, Axis};
 use crate::constraint::constraints::Constraints;
 use crate::dual_number::Dual;
 use crate::gp_regression::gp_reg::GPRegression;
-use crate::kernel::utils::{build_kernel_tree, parse_kernel_recursive, recusive_select_kernel};
+use crate::kernel::utils::recusive_select_kernel;
 use crate::predict::PredictionOutput;
 
 use ndarray_linalg::solve::{Inverse, Determinant};
