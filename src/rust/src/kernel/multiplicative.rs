@@ -20,6 +20,8 @@ impl MultiplicativeKernel {
             children : [left_kernel, right_kernel]
         }
     }
+
+
 }
 
 impl Kernel for MultiplicativeKernel {
@@ -69,6 +71,10 @@ impl Kernel for MultiplicativeKernel {
 
     fn describe(&self) -> String {
         "Times (*)".to_string()
+    }
+
+    fn log_prior(&self, gradient : bool) -> Dual {
+        todo!()
     }
 }
 

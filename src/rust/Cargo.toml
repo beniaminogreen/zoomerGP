@@ -12,8 +12,9 @@ name = 'zoomerGP'
 [dependencies]
 extendr-api = { version = "0.8.0", features = ["ndarray"] }
 indicatif = "0.17.8"
-ndarray = { version = "0.16.1", features = ["rayon"] }
+ndarray = { version = "0.16.1", features = ["rayon", "matrixmultiply-threading"] }
 ndarray-linalg = { version = "0.17"}
 rayon = "1.10"
 rand = "0.9.1"
 rand_distr = "0.5.1"
+statrs = "0.18.0"

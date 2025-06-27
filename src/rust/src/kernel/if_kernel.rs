@@ -54,5 +54,9 @@ impl Kernel for IfKernel {
     fn describe(&self) -> String {
         "If Kernel".to_string()
     }
+    
+    fn log_prior(&self, gradient : bool) -> Dual {
+        todo!()
+    }
 }
 

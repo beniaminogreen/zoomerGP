@@ -44,8 +44,6 @@ impl Kernel for CompositeKernel {
         }
     }
 
-    // this is incorrect because each kernel's hyperparameters then
-
     fn calc(&self, x: ArrayView1<f64>, y: ArrayView1<f64>, gradient : bool) -> Dual {
         if !gradient {
             self.kernels
@@ -76,5 +74,27 @@ impl Kernel for CompositeKernel {
     fn describe(&self) -> String {
         "Plus (+)".to_string()
     }
+
+    fn log_prior(&self, gradient : bool) -> Dual {
+        if !gradient {
+            self.kernels
+                .iter()
+                .map(|kernel| kernel.log_prior(gradient))
+                .sum()
+        }
+        else {
+            let mut gradients : Array1<f64> = Array1::zeros(self.num_params());
+            let mut i  = 0;
+            let mut result = 0.0;
+            for kernel in self.kernels.iter() {
+                let output = kernel.log_prior(true);
+                result += output.x;
+                for partial in output.grad.unwrap() {
+                    gradients[i] = partial;
+                    i += 1;
+                }
+            }
+            return Dual::from((result, gradients))
+        }    }
 }
 

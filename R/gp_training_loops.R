@@ -73,8 +73,13 @@ generate_fn_and_grad <- function(gpr_model, use_constraints = TRUE) {
   memoized_func <- memoise::memoise(function_to_optimize)
 
   fn <- function(param) {
-    memoized_func(param)$real
-  }
+    result <- memoized_func(param)$real
+    
+    if (!is.finite(result)) {
+      return(-9999999.99999)
+    } else
+      return(result)
+    }
 
   grad <- function(param) {
     memoized_func(param)$grad

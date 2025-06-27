@@ -11,4 +11,5 @@ pub trait Kernel : Debug + Sync {
     fn calc(&self, x: ArrayView1<f64>, y: ArrayView1<f64>, gradient : bool) -> Dual;
     fn children(&self) -> &[Box<dyn Kernel>];
     fn describe(&self) -> String;
+    fn log_prior(&self, gradient : bool) -> Dual;
 }

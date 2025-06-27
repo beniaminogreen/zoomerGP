@@ -1,8 +1,12 @@
 use super::kernel::Kernel;
 use ndarray::{ArrayView1, Array1};
-
+use rand_distr::num_traits::real::Real;
 use crate::dual_number::Dual;
 use crate::constraint::constraint::Constraint;
+
+use statrs::distribution::{Gamma, Continuous};
+use statrs::statistics::Distribution;
+
 
 #[derive(Debug)]
 pub struct ExpQuadKernel {
@@ -77,6 +81,29 @@ impl Kernel for ExpQuadKernel {
 
     fn describe(&self) -> String {
         "RBF Kernel".to_string()
+    }
+
+    fn log_prior(&self, gradient : bool) -> Dual {
+        let prior = Gamma::new(2.0, 0.5).unwrap();
+        let mut result = 0.0;
+
+        result += prior.ln_pdf(self.sigma);
+        for x in self.lengthscales.iter() {
+            result += prior.ln_pdf(*x);
+        }
+
+        if !gradient {
+            return Dual::from(result)
+        }
+
+        let mut grad = Array1::zeros(self.n_params);
+
+        grad[[0]] = 1.0/self.sigma - 0.5;
+        for (i, x) in self.lengthscales.iter().enumerate() {
+            grad[[i+1]] = 1.0/x - 0.5;
+        }
+
+        Dual::from((result, grad))
     }
 }
 

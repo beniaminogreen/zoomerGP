@@ -64,5 +64,9 @@ impl Kernel for IndicatorKernel {
     fn describe(&self) -> String {
         "Indicator Kernel".to_string()
     }
+
+    fn log_prior(&self, gradient : bool) -> Dual {
+        todo!()
+    }
 }
 

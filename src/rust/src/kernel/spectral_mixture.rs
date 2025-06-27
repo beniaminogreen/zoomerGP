@@ -114,5 +114,9 @@ impl Kernel for SpectralMixtureKernel {
     fn describe(&self) -> String {
         format!("Spectral Mixture Kernel with {}", self.q)
     }
+
+    fn log_prior(&self, gradient : bool) -> Dual {
+        todo!()
+    }
 }
 

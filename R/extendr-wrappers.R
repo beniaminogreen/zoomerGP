@@ -124,7 +124,11 @@ CoinSVGP <- new.env(parent = emptyenv())
 
 CoinSVGP$r_new <- function(x, y, kernel_specification, noise, n_particles) .Call(wrap__CoinSVGP__r_new, x, y, kernel_specification, noise, n_particles)
 
-CoinSVGP$run <- function(iter) invisible(.Call(wrap__CoinSVGP__run, self, iter))
+CoinSVGP$r_new_test <- function(n_particles) .Call(wrap__CoinSVGP__r_new_test, n_particles)
+
+CoinSVGP$r_new_latent <- function(x, y, kernel_specification, n_particles) .Call(wrap__CoinSVGP__r_new_latent, x, y, kernel_specification, n_particles)
+
+CoinSVGP$run <- function(iter) .Call(wrap__CoinSVGP__run, self, iter)
 
 CoinSVGP$predict <- function(prediction_points, sub_kernel) .Call(wrap__CoinSVGP__predict, self, prediction_points, sub_kernel)
 
@@ -133,6 +137,48 @@ CoinSVGP$predict <- function(prediction_points, sub_kernel) .Call(wrap__CoinSVGP
 
 #' @export
 `[[.CoinSVGP` <- `$.CoinSVGP`
+
+LatentGPR <- new.env(parent = emptyenv())
+
+LatentGPR$r_new <- function(x, y, kernel_specification) .Call(wrap__LatentGPR__r_new, x, y, kernel_specification)
+
+LatentGPR$predict <- function(prediction_points, sub_kernel) .Call(wrap__LatentGPR__predict, self, prediction_points, sub_kernel)
+
+LatentGPR$recommend_constraints <- function() .Call(wrap__LatentGPR__recommend_constraints, self)
+
+LatentGPR$log_like <- function(gradient) .Call(wrap__LatentGPR__log_like, self, gradient)
+
+LatentGPR$get_n_params <- function() .Call(wrap__LatentGPR__get_n_params, self)
+
+LatentGPR$update <- function() invisible(.Call(wrap__LatentGPR__update, self))
+
+LatentGPR$set_params <- function(params) invisible(.Call(wrap__LatentGPR__set_params, self, params))
+
+#' @export
+`$.LatentGPR` <- function (self, name) { func <- LatentGPR[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.LatentGPR` <- `$.LatentGPR`
+
+TestModel <- new.env(parent = emptyenv())
+
+TestModel$get_n_params <- function() .Call(wrap__TestModel__get_n_params, self)
+
+TestModel$set_params <- function(params) invisible(.Call(wrap__TestModel__set_params, self, params))
+
+TestModel$update <- function() invisible(.Call(wrap__TestModel__update, self))
+
+TestModel$predict <- function(prediction_points, sub_kernel) .Call(wrap__TestModel__predict, self, prediction_points, sub_kernel)
+
+TestModel$recommend_constraints <- function() .Call(wrap__TestModel__recommend_constraints, self)
+
+TestModel$log_like <- function(gradient) .Call(wrap__TestModel__log_like, self, gradient)
+
+#' @export
+`$.TestModel` <- function (self, name) { func <- TestModel[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.TestModel` <- `$.TestModel`
 
 
 # nolint end

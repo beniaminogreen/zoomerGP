@@ -66,5 +66,9 @@ impl Kernel for LinearKernel {
     fn describe(&self) -> String {
         "Linear Kernel".to_string()
     }
+
+    fn log_prior(&self, gradient : bool) -> Dual {
+        todo!()
+    }
 }
 

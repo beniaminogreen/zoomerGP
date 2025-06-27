@@ -194,6 +194,6 @@ impl Model for GPRegression {
 }
 
 extendr_module! {
-    mod model;
+    mod gp_reg_model;
     impl GPRegression;
 }
