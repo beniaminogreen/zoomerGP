@@ -7,7 +7,6 @@ use crate::predict::PredictionOutput;
 
 use std::ops::Neg;
 use extendr_api::{extendr, extendr_module};
-use ndarray_linalg::Inverse;
 use rand_distr::num_traits::real::Real;
 use crate::kernel::utils::{add_nugget_to_matrix, kernel_matrix_update, recusive_select_kernel};
 

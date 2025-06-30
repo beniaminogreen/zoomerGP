@@ -1,7 +1,4 @@
-use ndarray::Array1;
-use crate::constraint::constraints::Constraints;
 use crate::dual_number::Dual;
-use crate::predict::PredictionOutput;
 
 use std::ops::Neg;
 

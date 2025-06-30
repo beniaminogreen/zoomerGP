@@ -1,17 +1,11 @@
-use crate::model::Model;
 use std::sync::Arc;
-use ndarray::{Array1, Array2, ArrayView2, Axis, ArrayView1, Array3, s};
+use ndarray::{Array1, Array2, ArrayView2};
 use crate::constraint::constraint::Constraint;
 use crate::constraint::constraints::Constraints;
 use crate::dataset::{DataManager, UnitStandardizedDataset};
 use crate::kernel::kernel::Kernel;
 use extendr_api::prelude::*;
-use crate::dual_number::Dual;
-use crate::lyapunov;
-use crate::lyapunov::{lyap_newton_shulz_fwd, lyap_newton_shulz_backward};
 use crate::likelihood::{Likelihood, BinomialLogit};
-use crate::predict::PredictionOutput;
-use std::ops::Neg;
 use crate::kernel::utils::parse_kernel_recursive;
 
 #[allow(non_snake_case)]

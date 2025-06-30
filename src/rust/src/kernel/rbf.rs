@@ -5,7 +5,6 @@ use crate::dual_number::Dual;
 use crate::constraint::constraint::Constraint;
 
 use statrs::distribution::{Gamma, Continuous};
-use statrs::statistics::Distribution;
 
 
 #[derive(Debug)]

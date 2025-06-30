@@ -2,7 +2,7 @@ use extendr_api::prelude::*;
 use crate::gp_regression::gp_reg::GPRegression;
 use crate::latent_gp_regression::latent_gp_reg::LatentGPR;
 
-use std::ops::{AddAssign, Neg, SubAssign};
+use std::ops::AddAssign;
 
 use rand::rng;
 use rand_distr::{Normal, Distribution, Uniform};
