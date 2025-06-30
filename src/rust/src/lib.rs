@@ -11,6 +11,8 @@ mod model;
 mod lyapunov;
 mod likelihood;
 mod latent_gp_regression;
+mod sparse_latent_gp_regression;
+mod utils;
 //mod regression_manager;
 
 use extendr_api::prelude::*;
@@ -28,5 +30,6 @@ extendr_module! {
     use coin_svgd;
     //use lyapunov;
     use latent_gp_regression;
+    use sparse_latent_gp_regression;
     use model;
 }

@@ -128,6 +128,8 @@ CoinSVGP$r_new_test <- function(n_particles) .Call(wrap__CoinSVGP__r_new_test, n
 
 CoinSVGP$r_new_latent <- function(x, y, kernel_specification, n_particles) .Call(wrap__CoinSVGP__r_new_latent, x, y, kernel_specification, n_particles)
 
+CoinSVGP$r_new_sparse_latent <- function(x, y, x_inducing, kernel_specification, n_particles) .Call(wrap__CoinSVGP__r_new_sparse_latent, x, y, x_inducing, kernel_specification, n_particles)
+
 CoinSVGP$run <- function(iter) .Call(wrap__CoinSVGP__run, self, iter)
 
 CoinSVGP$predict <- function(prediction_points, sub_kernel) .Call(wrap__CoinSVGP__predict, self, prediction_points, sub_kernel)
@@ -159,6 +161,28 @@ LatentGPR$set_params <- function(params) invisible(.Call(wrap__LatentGPR__set_pa
 
 #' @export
 `[[.LatentGPR` <- `$.LatentGPR`
+
+SparseLatentGPR <- new.env(parent = emptyenv())
+
+SparseLatentGPR$r_new <- function(x, y, x_inducing, kernel_specification) .Call(wrap__SparseLatentGPR__r_new, x, y, x_inducing, kernel_specification)
+
+SparseLatentGPR$predict <- function(prediction_points, sub_kernel) .Call(wrap__SparseLatentGPR__predict, self, prediction_points, sub_kernel)
+
+SparseLatentGPR$recommend_constraints <- function() .Call(wrap__SparseLatentGPR__recommend_constraints, self)
+
+SparseLatentGPR$log_like <- function(gradient) .Call(wrap__SparseLatentGPR__log_like, self, gradient)
+
+SparseLatentGPR$get_n_params <- function() .Call(wrap__SparseLatentGPR__get_n_params, self)
+
+SparseLatentGPR$update <- function() invisible(.Call(wrap__SparseLatentGPR__update, self))
+
+SparseLatentGPR$set_params <- function(params) invisible(.Call(wrap__SparseLatentGPR__set_params, self, params))
+
+#' @export
+`$.SparseLatentGPR` <- function (self, name) { func <- SparseLatentGPR[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.SparseLatentGPR` <- `$.SparseLatentGPR`
 
 TestModel <- new.env(parent = emptyenv())
 

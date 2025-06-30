@@ -14,7 +14,7 @@ use super::kernel::Kernel;
 use ndarray_linalg::cholesky::{Cholesky, UPLO};
 
 
-use ndarray::{Array2, Axis, Array3, ArrayView2};
+use ndarray::{Array2, Axis, Array3, ArrayView2, ArrayViewMut2};
 use ndarray_linalg::SVD;
 use crate::dataset::DataManager;
 
@@ -177,4 +177,23 @@ pub fn recusive_select_kernel<'a>(kernel : &'a dyn Kernel, search_string : &str)
     };
 
     panic!("No matching child found for '{}'", requested_letter);
+}
+
+pub fn kernel_matrix_update(mut K : ArrayViewMut2<f64>, A : ArrayView2<f64>, B : ArrayView2<f64>, kernel : &dyn Kernel) {
+    K
+        .axis_iter_mut(Axis(0))
+        .enumerate()
+        .for_each(|(i, mut row)| {
+            for (j, element) in row.iter_mut().enumerate() {
+                *element = kernel
+                    .calc(A.row(i).view(), B.row(j).view(), false).x;
+            }
+        });
+}
+
+pub fn add_nugget_to_matrix(mut K : ArrayViewMut2<f64>, nugget : f64) {
+    let n = K.nrows(); 
+    for i in 0..n {
+        K[[i,i]] = nugget;
+    }
 }

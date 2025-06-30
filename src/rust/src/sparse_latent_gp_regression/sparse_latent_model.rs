@@ -1,7 +1,6 @@
 use ndarray::{Array1, Array2, Array3, ArrayView1, ArrayView2, Axis};
 use crate::constraint::constraints::Constraints;
 use crate::dual_number::Dual;
-use crate::latent_gp_regression::latent_gp_reg::LatentGPR;
 use crate::lyapunov::{lyap_newton_shulz_backward, lyap_newton_shulz_fwd};
 use crate::model::Model;
 use crate::predict::PredictionOutput;
@@ -11,6 +10,8 @@ use extendr_api::{extendr, extendr_module};
 use ndarray_linalg::Inverse;
 use rand_distr::num_traits::real::Real;
 use crate::kernel::utils::{add_nugget_to_matrix, kernel_matrix_update, recusive_select_kernel};
+
+use crate::sparse_latent_gp_regression::sparse_latent_gp_reg::SparseLatentGPR;
 
 const NUM_FORWARD_ITER : usize = 5;
 const NUM_BACKWARD_ITER : usize = 5;
@@ -23,12 +24,9 @@ fn outer_product(a: ArrayView1<f64>, b: ArrayView1<f64>) -> Array2<f64> {
 }
 
 #[extendr]
-impl Model for LatentGPR{
+impl Model for SparseLatentGPR{
     fn predict(&self, prediction_points: ArrayView2<f64>, sub_kernel: Option<String>) -> PredictionOutput {
         let u : Array1<f64> = self.L.dot(&self.v);
-
-        dbg!(&self.v);
-        dbg!(&u);
 
         let mut prediction_points = prediction_points.to_owned();
         prediction_points = self.dataset.scale_predictors(prediction_points.view());
@@ -50,11 +48,13 @@ impl Model for LatentGPR{
                 }
             });
 
+        todo!();
 
-        let k_inv = self.K.inv().unwrap();
+
+       /* let k_inv = self.K.inv().unwrap();
         let preds = K_star.dot(&k_inv).dot(&u);
 
-        PredictionOutput::from((preds, None, None))
+        PredictionOutput::from((preds, None, None))*/
     }
 
     fn recommend_constraints(&self) -> Constraints {
@@ -69,56 +69,91 @@ impl Model for LatentGPR{
 
         // first calculate log-likelihood component from v
         let v_component : f64  = self.v.iter().map(|x| x.powi(2)).sum::<f64>().neg();
+        println!("here a!");
+        dbg!(self.L.shape());
 
         // then calculate u
-        let u : Array1<f64> = self.L.dot(&self.v);
+        let u : Array1<f64> = self.K_nm.dot(&self.L.dot(&self.v));
+        println!("here a2!");
 
         let likelihood_dual = self.likelihood.log_like(u.as_slice().unwrap(), gradient);
+        println!("here a3!");
 
         let log_like = v_component + likelihood_dual.x + &log_prior.x;
 
         if !gradient {
             return Dual::from(log_like);
         }
+        println!("here b!");
+        dbg!(&likelihood_dual.grad.as_ref().unwrap().len());
+        dbg!(&self.v.shape());
 
         // if we do need to calculate the gradient, we need to calculate partials wrt theta
-        let dl_dL : Array2<f64> = outer_product(likelihood_dual.grad.as_ref().unwrap().view(), self.v.view());
+        let dl_dY : Array2<f64> = outer_product(likelihood_dual.grad.as_ref().unwrap().view(), self.v.view());
+        println!("here c!");
 
-        let dl_dK = lyap_newton_shulz_backward(self.L.view(), dl_dL.view(), NUM_BACKWARD_ITER);
+        println!("here!");
+        println!("{},{}", self.L.nrows(), self.L.ncols());
+        let dl_dknm: Array2<f64> = dl_dY.dot(&self.L.t());
+        println!("here 2!");
+        // for the sparse case, we must pre-multiply by K_mm
+        let dl_dL = self.K_nm.t().dot(&dl_dY);
+        let dl_dkmm = lyap_newton_shulz_backward(self.L.view(), dl_dL.view(), NUM_BACKWARD_ITER);
+        println!("here 3!");
 
         let X = self.dataset.get_X();
+        let X_m = self.X_inducing.view();
         let n = X.nrows();
         let d = self.kernel.num_params();
-        let mut matrix_differentials: Array3<f64> = Array3::zeros((n, n, d));
+        let m = self.X_inducing.nrows();
 
-        for i in 0..n {
+        // this is the m by m derivative matrix
+        let mut k_mm_matrix_differentials: Array3<f64> = Array3::zeros((m, m, d));
+        for i in 0..m {
             for j in 0..(i + 1) {
                 let gradients = self
                     .kernel
-                    .calc(X.row(i).view(), X.row(j).view(), true).grad.unwrap();
+                    .calc(X_m.row(i).view(), X_m.row(j).view(), true).grad.unwrap();
                 for var_index in 0..d {
-                    matrix_differentials[[i, j, var_index]] = gradients[var_index];
-                    matrix_differentials[[j, i, var_index]] = gradients[var_index];
+                    k_mm_matrix_differentials[[i, j, var_index]] = gradients[var_index];
+                    k_mm_matrix_differentials[[j, i, var_index]] = gradients[var_index];
                 }
             }
         }
+
+        let mut k_nm_matrix_differentials: Array3<f64> = Array3::zeros((n, m, d));
+        for i in 0..n {
+            for j in 0..m {
+                let gradients = self
+                    .kernel
+                    .calc(X.row(i).view(), X_m.row(j).view(), true).grad.unwrap();
+                for var_index in 0..d {
+                    k_nm_matrix_differentials[[i,j, var_index]] = gradients[var_index];
+                }
+            }
+        }
+        println!("here 4!");
 
 
         let mut theta_grads = Vec::with_capacity(d);
         let log_prior_grad = log_prior.grad.unwrap();
 
         for i in 0..d {
-            let dK_dtheta : ArrayView2<f64> = matrix_differentials.index_axis(Axis(2),i);
+            let dKmm_dtheta : ArrayView2<f64> = k_mm_matrix_differentials.index_axis(Axis(2),i);
 
-            let result : f64 =  dl_dK.iter().zip(dK_dtheta.iter()).map(|(a,b)| a*b).sum();
+            let dKnm_dtheta : ArrayView2<f64> =  k_nm_matrix_differentials.index_axis(Axis(2),i);
+
+            let result_lhs : f64 =  dl_dkmm.iter().zip(dKmm_dtheta.iter()).map(|(a,b)| a*b).sum();
+            let result_rhs : f64 = dl_dknm.iter().zip(dKnm_dtheta.iter()).map(|(a,b)| a*b).sum();
 
 
-            theta_grads.push(result + log_prior_grad[i]);
+            theta_grads.push(result_lhs + result_rhs + log_prior_grad[i]);
         }
 
 
+        let temp = self.K_nm.dot(&self.L);
         // now calculate grads wrt v
-        let v_grads = likelihood_dual.grad.unwrap().dot(&self.L) -2.0 * &self.v;
+        let v_grads = temp.t().dot(&likelihood_dual.grad.unwrap()) -2.0 * &self.v;
         theta_grads.extend(v_grads.into_iter());
 
         Dual::from((log_like, Array1::from(theta_grads)))
@@ -127,18 +162,22 @@ impl Model for LatentGPR{
 
     fn get_n_params(&self) -> usize { self.n_params }
     fn update(&mut self) {
+        dbg!("updating");
         let X = self.dataset.get_X();
+        let X_m = self.X_inducing.view();
+
+        kernel_matrix_update(self.K_mm.view_mut(), X_m,X_m, &*self.kernel);
+        kernel_matrix_update(self.K_nm.view_mut(), X,X_m, &*self.kernel);
 
 
-        kernel_matrix_update(self.K.view_mut(), X,X, &*self.kernel);
+        add_nugget_to_matrix(self.K_mm.view_mut(), NUGGET);
 
-        add_nugget_to_matrix(self.K.view_mut(), NUGGET);
-
-
-        let (L , _) = lyap_newton_shulz_fwd(self.K.view(), NUM_FORWARD_ITER);
+        let (L , _) = lyap_newton_shulz_fwd(self.K_mm.view(), NUM_FORWARD_ITER);
         self.L = L;
 
         self.stale = false;
+        dbg!("updated");
+
     }
 
     fn set_params(&mut self, params : &[f64]) {
@@ -150,6 +189,6 @@ impl Model for LatentGPR{
 }
 
 extendr_module! {
-    mod latent_model;
-    impl LatentGPR;
+    mod sparse_latent_model;
+    impl SparseLatentGPR;
 }

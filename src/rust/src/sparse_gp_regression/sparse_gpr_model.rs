@@ -3,7 +3,7 @@ use extendr_api::{extendr, extendr_module};
 use ndarray::{Array1, Array2, ArrayView2, Axis};
 use crate::constraint::constraints::Constraints;
 use crate::dual_number::Dual;
-use crate::kernel::utils::{fast_gradient_matrix, recusive_select_kernel, stable_log_det};
+use crate::kernel::utils::{fast_gradient_matrix, kernel_matrix_update, recusive_select_kernel, stable_log_det};
 use crate::predict::PredictionOutput;
 use crate::sparse_gp_regression::sparse_gp_reg::SparseGPRegression;
 
@@ -32,30 +32,10 @@ impl Model for SparseGPRegression {
     #[allow(non_snake_case)]
     fn update(&mut self) {
         let X = self.dataset.get_X();
-        self.K_nm
-            .axis_iter_mut(Axis(0))
-            .into_iter()
-            .enumerate()
-            .for_each(|(i, mut row)| {
-                for (j, element) in row.iter_mut().enumerate() {
-                    *element = self
-                        .kernel
-                        .calc(X.row(i).view(), self.X_inducing.row(j).view(), false).x;
-                }
-            });
 
-        self.K_mm
-            .axis_iter_mut(Axis(0))
-            .into_iter()
-            .enumerate()
-            .for_each(|(i, mut row)| {
-                for (j, element) in row.iter_mut().enumerate() {
-                    *element = self
-                        .kernel
-                        .calc(self.X_inducing.row(i).view(), self.X_inducing.row(j),false).x;
-                }
-            });
-
+        kernel_matrix_update(self.K_nm.view_mut(), X,self.X_inducing.view(), &*self.kernel);
+        kernel_matrix_update(self.K_mm.view_mut(), self.X_inducing.view(),self.X_inducing.view(), &*self.kernel);
+        
         let m = self.K_mm.nrows();
         for i in 0..m {
             self.K_mm[[i, i]] += 0.000001;

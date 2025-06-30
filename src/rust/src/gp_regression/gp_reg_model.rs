@@ -3,7 +3,7 @@ use ndarray::{Array1, Array2, Array3, ArrayView2, Axis};
 use crate::constraint::constraints::Constraints;
 use crate::dual_number::Dual;
 use crate::gp_regression::gp_reg::GPRegression;
-use crate::kernel::utils::recusive_select_kernel;
+use crate::kernel::utils::{kernel_matrix_update, recusive_select_kernel};
 use crate::predict::PredictionOutput;
 
 use ndarray_linalg::solve::{Inverse, Determinant};
@@ -42,16 +42,7 @@ impl Model for GPRegression {
 
         let X = self.dataset.get_X();
 
-        self.K
-            .axis_iter_mut(Axis(0))
-            .enumerate()
-            .for_each(|(i, mut row)| {
-                for (j, element) in row.iter_mut().enumerate() {
-                    *element = self
-                        .kernel
-                        .calc(X.row(i).view(), X.row(j).view(), false).x;
-                }
-            });
+        kernel_matrix_update(self.K.view_mut(), X,X, &*self.kernel);
 
         let sigma_squared = self.sigma.powi(2);
         for i in 0..self.K.nrows() {

@@ -12,6 +12,7 @@ use crate::model::{Model, TestModel};
 use crate::predict::PredictionOutput;
 use std::cmp::Ordering;
 use crate::constraint::constraints::Constraints;
+use crate::sparse_latent_gp_regression::sparse_latent_gp_reg::SparseLatentGPR;
 
 // implements Algorithm 6 from
 //https://proceedings.mlr.press/v202/sharrock23a/sharrock23a.pdf
@@ -268,6 +269,23 @@ pub fn compute_kernel_matrix(X: ArrayView2<f64>) -> (Array2<f64>, Array1<f64>) {
 
          Self::new(lambdas.to_owned(), Box::new(model))
      }
+
+     fn r_new_sparse_latent(x: ArrayView2<f64>, y: &[f64], x_inducing : ArrayView2<f64>, kernel_specification: List, n_particles : usize) -> Self {
+         let model = SparseLatentGPR::r_new(x, y, x_inducing, kernel_specification);
+
+         let d = model.get_n_params();
+
+         let normal = Normal::new(0.0, 1.0).unwrap();
+         let mut rng = rng();
+
+         // Create a 1D array of 10 elements with normal random values
+         let data: Vec<f64> = (0..d*n_particles).map(|_| normal.sample(&mut rng)).collect();
+         let lambdas = Array2::from_shape_vec((n_particles, d), data).unwrap();
+
+
+         Self::new(lambdas.to_owned(), Box::new(model))
+     }
+
 
      pub fn run(&mut self, iter : usize) -> Robj { ;
          for i in 0..iter {
