@@ -5,13 +5,13 @@ use crate::latent_gp_regression::latent_gp_reg::LatentGPR;
 use std::ops::{AddAssign, Neg, SubAssign};
 
 use rand::rng;
-use rand_distr::{Normal, Distribution};
+use rand_distr::{Normal, Distribution, Uniform};
 
 use ndarray::{Array1, Array2, ArrayView2, Axis};
 use crate::model::{Model, TestModel};
 use crate::predict::PredictionOutput;
 use std::cmp::Ordering;
-
+use crate::constraint::constraints::Constraints;
 
 // implements Algorithm 6 from
 //https://proceedings.mlr.press/v202/sharrock23a/sharrock23a.pdf
@@ -27,6 +27,7 @@ struct CoinSVGP{
     grad_sum: Array2<f64>,
     reward: Array2<f64>,
     model : Box<dyn Model>,
+    constraints: Constraints
 }
 
 #[allow(non_snake_case)]
@@ -35,11 +36,10 @@ pub fn compute_kernel_matrix(X: ArrayView2<f64>) -> (Array2<f64>, Array1<f64>) {
     let mut bws: Vec<f64> = Vec::with_capacity(X.ncols());
     for col in X.axis_iter(Axis(1)) {
         let mut col_vec = col.to_vec();
-        col_vec.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        col_vec.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Less));
 
         let mut distances: Vec<f64> = col_vec.windows(2).map(|x| x[1] - x[0]).collect();
-        distances.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        //dbg!(&distances);
+        distances.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Less));
 
         let median = distances[X.nrows() / 2];
         let bw : f64 = median.powi(2)  / (X.nrows() as f64).log10();
@@ -72,10 +72,9 @@ pub fn compute_kernel_matrix(X: ArrayView2<f64>) -> (Array2<f64>, Array1<f64>) {
     (out, Array1::from_vec(bws))
 }
 
-fn kernel_and_repulsion(lambdas : ArrayView2<f64>) -> (Array2<f64>, Array2<f64>){
+/*fn kernel_and_repulsion(lambdas : ArrayView2<f64>) -> (Array2<f64>, Array2<f64>){
     let n = lambdas.nrows();
     let d = lambdas.ncols();
-    dbg!(&lambdas);
     // first, calculate bandwidth with median rule
     let mut bws : Vec<f64> = Vec::<f64>::with_capacity(lambdas.len());
     for col in lambdas.axis_iter(Axis(1)) {
@@ -118,12 +117,14 @@ fn kernel_and_repulsion(lambdas : ArrayView2<f64>) -> (Array2<f64>, Array2<f64>)
      }
 
      (kernels, repulsion_terms)
- }
+ }*/
 
  impl CoinSVGP{
      fn new(lambdas: Array2<f64>, model : Box<dyn Model>) -> Self {
          let n = lambdas.nrows();
          let d = lambdas.ncols();
+
+         let constraints = model.recommend_constraints();
 
          let L = Array2::zeros((n,d));
          Self{
@@ -135,40 +136,68 @@ fn kernel_and_repulsion(lambdas : ArrayView2<f64>) -> (Array2<f64>, Array2<f64>)
              L,
              n,
              d,
-             model
+             model,
+             constraints
          }
      }
 
      fn step(&mut self) {
-         let (k_mat, repulsion_terms) = kernel_and_repulsion(self.theta.view());
-
+         let (k_mat, bws) = compute_kernel_matrix(self.theta.view());
          let old_X =  self.theta.clone();
-         dbg!(&old_X);
 
          // first, calculate the matrix of log_density_gradients
-         let mut grads : Array2<f64> = Array2::zeros((self.n,self.d));
-
+         let mut gradient_array : Array2<f64> = Array2::zeros((self.n,self.d));
          for i in 0..self.n {
-             let constrained_params = self.model.recommend_constraints().constrain(self.theta.row(i).as_slice().unwrap());
+             let constrained_params = self.constraints.constrain(self.theta.row(i).as_slice().unwrap());
 
              self.model.set_params(constrained_params.x.as_slice().unwrap());
              self.model.update();
 
              // apply Jacobian Correction
-             let grad = &self.model.log_like(true).grad.unwrap(); //+ constrained_params.grad.unwrap().ln();
+             let grad = &self.model.log_like(true).grad.unwrap() + constrained_params.grad.unwrap().ln();
 
-             grads.row_mut(i).assign(&grad);
+             gradient_array.row_mut(i).assign(&grad);
+         }
+
+         for i in 0..self.n {
+             let mut tally: Array1<f64> = Array1::zeros(self.d);
+             for j in 0..self.n {
+                 let attraction_term = k_mat[[i, j]] * &gradient_array.row(j);
+                 if i == j {
+                     tally = tally + attraction_term;
+                 } else {
+                     let repulsion_term = 2.0 * k_mat[[i, j]] * (old_X.row(i).to_owned() - old_X.row(j)) / &bws;
+                     tally = tally + attraction_term + repulsion_term;
+                 }
+             }
+             let gradient = tally / (self.n as f64);
+
+             // now move to second for loop of algorithm
+             for j in 0..self.d {
+                 let abs_grad = gradient[j].abs();
+                 self.L[[i, j]] = abs_grad.max(self.L[[i, j]]);
+                 self.abs_grad_sum[[i, j]].add_assign(abs_grad);
+                 let updated_reward = self.reward[[i, j]] + (gradient[j] * (old_X[[i, j]] - self.theta_0[[i, j]]));
+                 self.reward[[i, j]] = updated_reward.max(0.0);
+                 self.grad_sum[[i, j]].add_assign(gradient[j]);
+
+
+                 let update_lhs = self.grad_sum[[i,j]] / (self.abs_grad_sum[[i,j]] + self.L[[i,j]]).max(100.0 * self.L[[i,j]]);
+                 let update_rhs = 1.0 + (self.reward[[i,j]]/self.L[[i,j]]);
+                 self.theta[[i, j]] = self.theta_0[[i,j]] + (update_lhs*update_rhs);
+             }
          }
 
          // then compute the negative gradients
-         for i  in 0..self.n {
+        /* for i  in 0..self.n {
              let mut tally = Array1::zeros(self.d);
-             for j in 0..self.n  {
-                 let attraction_term = grads.row(j).to_owned() * k_mat[[i,j]];
-                 tally.sub_assign(&attraction_term);
+             for j in 0..self.n {
+                 tally = tally - gradient_array.row(j).to_owned() * k_mat[[i,j]];
+                 if i != j {
+                     let repulsion_term = 2.0 * k_mat[[i,j]] * (old_X.row(i).to_owned() - old_X.row(j));
+                     tally = tally + repulsion_term;
+                 }
              }
-
-             tally.add_assign(&repulsion_terms.row(i));
 
              let gradient = tally / self.n as f64;
              let abs_grad = gradient.abs();
@@ -187,7 +216,7 @@ fn kernel_and_repulsion(lambdas : ArrayView2<f64>) -> (Array2<f64>, Array2<f64>)
 
                  self.theta[[i,j]] = self.theta_0[[i,j]] +  update_lhs * update_rhs;
              }
-         }
+         }*/
      }
  }
 
@@ -214,7 +243,7 @@ fn kernel_and_repulsion(lambdas : ArrayView2<f64>) -> (Array2<f64>, Array2<f64>)
 
          let d = model.get_n_params();
 
-         let normal = Normal::new(0.0, 1.0).unwrap();
+         let normal = Uniform::new(-15.0, 15.00).unwrap();
          let mut rng = rng();
 
          // Create a 1D array of 10 elements with normal random values

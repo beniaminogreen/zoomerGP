@@ -48,7 +48,7 @@ impl Model for TestModel {
         Constraints::new(vec![Constraint::new_no_constraint();2])
     }
 
-    fn log_like(&self, gradient: bool) -> Dual {
+   /* fn log_like(&self, gradient: bool) -> Dual {
         let log_like = -(self.params[0] + 4.0).powi(2) - (self.params[1]-2.0).powi(2);
 
         if !gradient {
@@ -59,11 +59,11 @@ impl Model for TestModel {
         grad[0] = self.params[0] + 4.0;
         grad[1] = self.params[1] - 2.0;
         Dual::from((log_like,grad))
-    }
+    }*/
 
-    /*fn log_like(&self, gradient: bool) -> Dual {
-        let dist_1 : f64 = (self.params[0] - 5.0).powi(2) + (self.params[1]-3.0).powi(2);
-        let dist_2 : f64 = (self.params[0] - 8.0).powi(2) + (self.params[1]-3.0).powi(4);
+    fn log_like(&self, gradient: bool) -> Dual {
+        let dist_1 : f64 = (self.params[0] + 5.0).powi(2) + (self.params[1]+2.0).powi(2);
+        let dist_2 : f64 = (self.params[0] - 8.0).powi(2) + (self.params[1]-3.0).powi(2);
 
         let w_1 = (0.25 / PI) * (-0.5 * dist_1).exp();
         let w_2 = (0.25 / PI) * (-0.5 * dist_2).exp();
@@ -81,15 +81,13 @@ impl Model for TestModel {
 
         let mut grad = Array1::zeros(2);
 
-        grad[0] += gamma_1 * (self.params[0] - 5.0) + gamma_2 * (self.params[1]-8.0);
-        grad[1] += gamma_1 * (self.params[0] - 3.0) + gamma_2 * (self.params[1]-3.0);
+        grad[0] += gamma_1 * (self.params[0] + 5.0) + gamma_2 * (self.params[0]-8.0);
+        grad[1] += gamma_1 * (self.params[1] + 2.0 ) + gamma_2 * (self.params[1]-3.0);
 
 
         Dual::from((log_like, grad))
 
     }
-*/
-
 }
 
 extendr_module! {
