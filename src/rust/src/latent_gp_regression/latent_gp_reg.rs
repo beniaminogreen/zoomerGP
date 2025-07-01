@@ -45,6 +45,8 @@ impl LatentGPR {
         let mut constraints = kernel.rec_constraint();
         let latent_constraints = vec![Constraint::new_no_constraint(); n];
         constraints.extend(latent_constraints);
+        
+        
 
         Self {
             n_params,

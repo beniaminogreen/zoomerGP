@@ -8,6 +8,7 @@ use crate::predict::PredictionOutput;
 use std::ops::Neg;
 use extendr_api::{extendr, extendr_module};
 use rand_distr::num_traits::real::Real;
+use ndarray_linalg::Inverse;
 use crate::kernel::utils::{add_nugget_to_matrix, kernel_matrix_update, recusive_select_kernel};
 
 use crate::sparse_latent_gp_regression::sparse_latent_gp_reg::SparseLatentGPR;
@@ -25,31 +26,33 @@ fn outer_product(a: ArrayView1<f64>, b: ArrayView1<f64>) -> Array2<f64> {
 #[extendr]
 impl Model for SparseLatentGPR{
     fn predict(&self, prediction_points: ArrayView2<f64>, sub_kernel: Option<String>) -> PredictionOutput {
+        println!("point A");
         let u : Array1<f64> = self.L.dot(&self.v);
 
         let mut prediction_points = prediction_points.to_owned();
         prediction_points = self.dataset.scale_predictors(prediction_points.view());
 
-        let X = self.dataset.get_X();
-
-        let mut K_star = Array2::zeros((prediction_points.nrows(), self.dataset.shape().0));
+        let X_m = self.X_inducing.view();
 
         let kernel = match sub_kernel {
             Some(search_str) => {recusive_select_kernel(self.kernel.as_ref(), search_str.as_str())}
             None => {self.kernel.as_ref()}
         };
+        println!("point B");
 
-        K_star.axis_iter_mut(Axis(0))
-            .enumerate()
-            .for_each(|(i, mut row)| {
-                for (j, element) in row.iter_mut().enumerate() {
-                    *element = kernel.calc(prediction_points.row(i).view(), X.row(j), false).x;
-                }
-            });
+        let mut K_star = Array2::zeros((prediction_points.nrows(), X_m.nrows()));
+        kernel_matrix_update(K_star.view_mut(), prediction_points.view(), X_m.view(), &*kernel);
 
-        todo!();
+        /*let mut temp : Array2<f64> = self.K_nm.t().dot(&self.K_nm);
+        println!("point C");
 
+        add_nugget_to_matrix(temp.view_mut(), 0.0001);
+        println!("point D");
 
+        let inv = temp.inv().unwrap();*/
+        let preds = K_star.dot(&u);
+
+        PredictionOutput::from((preds, None, None))
        /* let k_inv = self.K.inv().unwrap();
         let preds = K_star.dot(&k_inv).dot(&u);
 
@@ -68,37 +71,26 @@ impl Model for SparseLatentGPR{
 
         // first calculate log-likelihood component from v
         let v_component : f64  = self.v.iter().map(|x| x.powi(2)).sum::<f64>().neg();
-        println!("here a!");
-        dbg!(self.L.shape());
 
         // then calculate u
         let u : Array1<f64> = self.K_nm.dot(&self.L.dot(&self.v));
-        println!("here a2!");
 
         let likelihood_dual = self.likelihood.log_like(u.as_slice().unwrap(), gradient);
-        println!("here a3!");
 
         let log_like = v_component + likelihood_dual.x + &log_prior.x;
 
         if !gradient {
             return Dual::from(log_like);
         }
-        println!("here b!");
-        dbg!(&likelihood_dual.grad.as_ref().unwrap().len());
-        dbg!(&self.v.shape());
+
 
         // if we do need to calculate the gradient, we need to calculate partials wrt theta
         let dl_dY : Array2<f64> = outer_product(likelihood_dual.grad.as_ref().unwrap().view(), self.v.view());
-        println!("here c!");
 
-        println!("here!");
-        println!("{},{}", self.L.nrows(), self.L.ncols());
         let dl_dknm: Array2<f64> = dl_dY.dot(&self.L.t());
-        println!("here 2!");
         // for the sparse case, we must pre-multiply by K_mm
         let dl_dL = self.K_nm.t().dot(&dl_dY);
         let dl_dkmm = lyap_newton_shulz_backward(self.L.view(), dl_dL.view(), NUM_BACKWARD_ITER);
-        println!("here 3!");
 
         let X = self.dataset.get_X();
         let X_m = self.X_inducing.view();
@@ -131,7 +123,6 @@ impl Model for SparseLatentGPR{
                 }
             }
         }
-        println!("here 4!");
 
 
         let mut theta_grads = Vec::with_capacity(d);
@@ -161,7 +152,6 @@ impl Model for SparseLatentGPR{
 
     fn get_n_params(&self) -> usize { self.n_params }
     fn update(&mut self) {
-        dbg!("updating");
         let X = self.dataset.get_X();
         let X_m = self.X_inducing.view();
 
@@ -175,8 +165,6 @@ impl Model for SparseLatentGPR{
         self.L = L;
 
         self.stale = false;
-        dbg!("updated");
-
     }
 
     fn set_params(&mut self, params : &[f64]) {

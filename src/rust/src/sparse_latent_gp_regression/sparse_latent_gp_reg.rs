@@ -49,6 +49,9 @@ impl SparseLatentGPR {
         let latent_constraints = vec![Constraint::new_no_constraint(); m];
         constraints.extend(latent_constraints);
 
+        let x_inducing = dataset.scale_predictors(x_inducing);
+
+
         Self {
             n_params,
             dataset,

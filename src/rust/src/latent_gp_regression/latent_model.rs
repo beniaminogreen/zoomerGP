@@ -27,29 +27,18 @@ impl Model for LatentGPR{
     fn predict(&self, prediction_points: ArrayView2<f64>, sub_kernel: Option<String>) -> PredictionOutput {
         let u : Array1<f64> = self.L.dot(&self.v);
 
-        dbg!(&self.v);
-        dbg!(&u);
-
         let mut prediction_points = prediction_points.to_owned();
         prediction_points = self.dataset.scale_predictors(prediction_points.view());
 
         let X = self.dataset.get_X();
-
-        let mut K_star = Array2::zeros((prediction_points.nrows(), self.dataset.shape().0));
 
         let kernel = match sub_kernel {
             Some(search_str) => {recusive_select_kernel(self.kernel.as_ref(), search_str.as_str())}
             None => {self.kernel.as_ref()}
         };
 
-        K_star.axis_iter_mut(Axis(0))
-            .enumerate()
-            .for_each(|(i, mut row)| {
-                for (j, element) in row.iter_mut().enumerate() {
-                    *element = kernel.calc(prediction_points.row(i).view(), X.row(j), false).x;
-                }
-            });
-
+        let mut K_star = Array2::zeros((prediction_points.nrows(), self.dataset.shape().0));
+        kernel_matrix_update(K_star.view_mut(), prediction_points.view(), X.view(), &*kernel);
 
         let k_inv = self.K.inv().unwrap();
         let preds = K_star.dot(&k_inv).dot(&u);
