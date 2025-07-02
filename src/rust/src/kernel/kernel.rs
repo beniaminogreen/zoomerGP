@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use crate::dual_number::Dual;
 use crate::constraint::constraint::Constraint;
 
-pub trait Kernel : Debug + Sync {
+pub trait Kernel : Debug + Sync + Send {
     fn rec_constraint(&self) -> Vec<Constraint>;
     fn num_params(&self) -> usize;
     fn set_params(&mut self, params: &[f64]);

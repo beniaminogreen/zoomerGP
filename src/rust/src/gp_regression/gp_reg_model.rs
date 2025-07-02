@@ -3,7 +3,7 @@ use ndarray::{Array1, Array2, Array3, ArrayView2, Axis};
 use crate::constraint::constraints::Constraints;
 use crate::dual_number::Dual;
 use crate::gp_regression::gp_reg::GPRegression;
-use crate::kernel::utils::{kernel_matrix_update, recusive_select_kernel};
+use crate::kernel::utils::{build_kernel_tree, kernel_matrix_update, recusive_select_kernel};
 use crate::predict::PredictionOutput;
 
 use ndarray_linalg::solve::{Inverse, Determinant};
@@ -14,6 +14,10 @@ use crate::model::{ClonableModel, Model};
 
 #[extendr]
 impl Model for GPRegression {
+
+    fn display_kernel(&self) -> String {
+        build_kernel_tree(self.kernel.as_ref(), "", "A", true)
+    }
     fn get_n_params(&self) -> usize {
         self.n_params
     }
@@ -185,7 +189,7 @@ impl Model for GPRegression {
 }
 
 impl ClonableModel for GPRegression {
-    fn clone_box(&self) -> Box<dyn Model> {
+    fn clone_box(&self) -> Box<dyn ClonableModel> {
         Box::new(self.clone())
     }
 }

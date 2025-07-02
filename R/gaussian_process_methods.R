@@ -7,14 +7,24 @@
 #' @method print gaussian_process
 #' @export
 print.gaussian_process <- function(x, ...) {
-  if (x$sparse) {-
+  if (x$sparse) {
     cat(sprintf("A Gaussian Process model with %d observations\n", x$n))
     cat("Using the projected process approximation\n")
   } else {
     cat(sprintf("A Gaussian Process model with %d observations\n", x$n))
   }
-  cat(sprintf("Log-Likelihood: %f\n", x$ll))
-  cat(sprintf("R-Squared: %f\n", x$rsq))
+  
+  if (!is.null(x$likelihood)) {
+    cat(sprintf("Using the %s\n", x$likelihood))
+  }
+  
+  if (!is.null(x$ll)) {
+    cat(sprintf("Log-Likelihood: %f\n", x$ll))
+  }
+  
+  if (!is.null(x$rsq)) {
+    cat(sprintf("R-Squared: %f\n", x$rsq))
+  }
   cat("Kernel Specification:\n")
   cat(x$gpr_object$display_kernel())
 }

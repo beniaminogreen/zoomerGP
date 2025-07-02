@@ -6,7 +6,7 @@ use crate::dataset::{DataManager, UnitStandardizedDataset};
 use crate::kernel::kernel::Kernel;
 use extendr_api::prelude::*;
 use crate::likelihood::{Likelihood, BinomialLogit};
-use crate::kernel::utils::parse_kernel_recursive;
+use crate::kernel::utils::{build_kernel_tree, parse_kernel_recursive};
 
 #[allow(non_snake_case)]
 #[extendr]
@@ -61,6 +61,7 @@ impl LatentGPR {
             likelihood: Box::new(BinomialLogit { y: response.into_iter().map(|x| x == 1.0).collect() })
         }
     }
+
 }
 
 extendr_module! {

@@ -31,5 +31,4 @@ extendr_module! {
     //use lyapunov;
     use latent_gp_regression;
     use sparse_latent_gp_regression;
-    use model;
 }

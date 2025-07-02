@@ -5,14 +5,17 @@ use crate::latent_gp_regression::latent_gp_reg::LatentGPR;
 use std::ops::AddAssign;
 
 use rand::rng;
-use rand_distr::{Normal, Distribution, Uniform};
+use rand_distr::{Normal, Distribution};
 
 use ndarray::{Array1, Array2, ArrayView2, Axis};
-use crate::model::{ClonableModel, Model, TestModel};
+use crate::model::{ClonableModel, Model};
 use crate::predict::PredictionOutput;
 use std::cmp::Ordering;
 use crate::constraint::constraints::Constraints;
 use crate::sparse_latent_gp_regression::sparse_latent_gp_reg::SparseLatentGPR;
+
+use rayon::prelude::*;
+use crate::kernel::utils::build_kernel_tree;
 
 // implements Algorithm 6 from
 //https://proceedings.mlr.press/v202/sharrock23a/sharrock23a.pdf
@@ -27,7 +30,7 @@ struct CoinSVGP{
     abs_grad_sum: Array2<f64>,
     grad_sum: Array2<f64>,
     reward: Array2<f64>,
-    model : Box<dyn ClonableModel>,
+    models : Vec<Box<dyn ClonableModel>>,
     constraints: Constraints
 }
 
@@ -121,11 +124,14 @@ pub fn compute_kernel_matrix(X: ArrayView2<f64>) -> (Array2<f64>, Array1<f64>) {
  }*/
 
  impl CoinSVGP{
+
      fn new(lambdas: Array2<f64>, model : Box<dyn ClonableModel>) -> Self {
          let n = lambdas.nrows();
          let d = lambdas.ncols();
 
          let constraints = model.recommend_constraints();
+
+         let models = vec![model; n];
 
          let L = Array2::zeros((n,d));
          Self{
@@ -137,7 +143,7 @@ pub fn compute_kernel_matrix(X: ArrayView2<f64>) -> (Array2<f64>, Array1<f64>) {
              L,
              n,
              d,
-             model,
+             models,
              constraints
          }
      }
@@ -148,17 +154,25 @@ pub fn compute_kernel_matrix(X: ArrayView2<f64>) -> (Array2<f64>, Array1<f64>) {
 
          // first, calculate the matrix of log_density_gradients
          let mut gradient_array : Array2<f64> = Array2::zeros((self.n,self.d));
-         for i in 0..self.n {
-             let constrained_params = self.constraints.constrain(self.theta.row(i).as_slice().unwrap());
 
-             self.model.set_params(constrained_params.x.as_slice().unwrap());
-             self.model.update();
 
-             // apply Jacobian Correction
-             let grad = &self.model.log_like(true).grad.unwrap() + constrained_params.grad.unwrap().ln();
+         let grads : Vec<Array1<f64>> = self.models.par_iter_mut().enumerate().map(
+             |(i,model)| {
+                 let constrained_params = self.constraints.constrain(self.theta.row(i).as_slice().unwrap());
 
+                 model.set_params(constrained_params.x.as_slice().unwrap());
+                 model.update();
+
+                 let grad : Array1<f64> = model.log_like(true).grad.unwrap() + constrained_params.grad.unwrap().ln();
+
+                 grad
+             }
+         ).collect();
+
+         for (i, grad) in grads.iter().enumerate() {
              gradient_array.row_mut(i).assign(&grad);
          }
+
 
          for i in 0..self.n {
              let mut tally: Array1<f64> = Array1::zeros(self.d);
@@ -223,6 +237,9 @@ pub fn compute_kernel_matrix(X: ArrayView2<f64>) -> (Array2<f64>, Array1<f64>) {
 
  #[extendr]
  impl CoinSVGP {
+     fn display_kernel(&self) -> String {
+         self.models[0].display_kernel()
+     }
      pub fn r_new(x: ArrayView2<f64>, y: &[f64], kernel_specification: List, noise: bool, n_particles : usize) -> Self {
          let model = GPRegression::r_new(x, y, kernel_specification, noise);
 
@@ -283,12 +300,12 @@ pub fn compute_kernel_matrix(X: ArrayView2<f64>) -> (Array2<f64>, Array1<f64>) {
 
      pub fn predict(&mut self,  prediction_points :ArrayView2<f64>, sub_kernel : Option<String>) -> PredictionOutput {
          let mut pred_outputs = Vec::new();
-         let constraints = self.model.recommend_constraints();
+         let constraints = self.models[0].recommend_constraints();
          for i in 0..self.n {
              let constrained_params = constraints.constrain(self.theta.row(i).as_slice().unwrap());
-             self.model.set_params(constrained_params.x.as_slice().unwrap());
-             self.model.update();
-             pred_outputs.push(self.model.predict(prediction_points, sub_kernel.clone()));
+             self.models[i].set_params(constrained_params.x.as_slice().unwrap());
+             self.models[i].update();
+             pred_outputs.push(self.models[i].predict(prediction_points, sub_kernel.clone()));
          };
 
          let mut pred_means = pred_outputs[0].response.clone();

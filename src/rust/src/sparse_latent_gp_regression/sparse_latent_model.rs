@@ -9,8 +9,7 @@ use crate::predict::PredictionOutput;
 use std::ops::Neg;
 use extendr_api::{extendr, extendr_module};
 use rand_distr::num_traits::real::Real;
-use ndarray_linalg::Inverse;
-use crate::kernel::utils::{add_nugget_to_matrix, kernel_matrix_update, recusive_select_kernel};
+use crate::kernel::utils::{add_nugget_to_matrix, build_kernel_tree, kernel_matrix_update, recusive_select_kernel};
 use crate::likelihood::Likelihood;
 use crate::sparse_latent_gp_regression::sparse_latent_gp_reg::SparseLatentGPR;
 
@@ -26,6 +25,10 @@ fn outer_product(a: ArrayView1<f64>, b: ArrayView1<f64>) -> Array2<f64> {
 
 #[extendr]
 impl Model for SparseLatentGPR{
+
+    fn display_kernel(&self) -> String {
+        build_kernel_tree(self.kernel.as_ref(), "", "A", true)
+    }
     fn predict(&self, prediction_points: ArrayView2<f64>, sub_kernel: Option<String>) -> PredictionOutput {
         println!("point A");
         let u : Array1<f64> = self.L.dot(&self.v);
@@ -177,7 +180,7 @@ impl Model for SparseLatentGPR{
 }
 
 impl ClonableModel for SparseLatentGPR {
-    fn clone_box(&self) -> Box<dyn Model> {
+    fn clone_box(&self) -> Box<dyn ClonableModel> {
         Box::new(self.clone())
     }
 }

@@ -10,8 +10,7 @@ use std::ops::Neg;
 use extendr_api::{extendr, extendr_module};
 use ndarray_linalg::Inverse;
 use rand_distr::num_traits::real::Real;
-use crate::gp_regression::gp_reg::GPRegression;
-use crate::kernel::utils::{add_nugget_to_matrix, kernel_matrix_update, recusive_select_kernel};
+use crate::kernel::utils::{add_nugget_to_matrix, build_kernel_tree, kernel_matrix_update, recusive_select_kernel};
 use crate::likelihood::Likelihood;
 
 const NUM_FORWARD_ITER : usize = 5;
@@ -26,6 +25,10 @@ fn outer_product(a: ArrayView1<f64>, b: ArrayView1<f64>) -> Array2<f64> {
 
 #[extendr]
 impl Model for LatentGPR{
+
+    fn display_kernel(&self) -> String {
+        build_kernel_tree(self.kernel.as_ref(), "", "A", true)
+    }
     fn predict(&self, prediction_points: ArrayView2<f64>, sub_kernel: Option<String>) -> PredictionOutput {
         let u : Array1<f64> = self.L.dot(&self.v);
 
@@ -141,7 +144,7 @@ impl Model for LatentGPR{
 }
 
 impl ClonableModel for LatentGPR {
-    fn clone_box(&self) -> Box<dyn Model> {
+    fn clone_box(&self) -> Box<dyn ClonableModel> {
         Box::new(self.clone())
     }
 }

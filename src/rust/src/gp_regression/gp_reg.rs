@@ -12,7 +12,6 @@ use extendr_api::prelude::*;
 
 use crate::coin_optimizer::CoinOptimizer;
 use crate::kernel::utils::{build_kernel_tree, parse_kernel_recursive};
-use crate::model::ClonableModel;
 
 #[allow(non_snake_case)]
 #[extendr]
@@ -64,10 +63,6 @@ impl GPRegression {
 
 #[extendr]
 impl GPRegression {
-    pub fn display_kernel(&self) -> String {
-        build_kernel_tree(self.kernel.as_ref(), "", "A", true)
-    }
-
     pub fn optimize(&mut self, max_iter : u32, use_constraints : bool) {
         let optimizer = CoinOptimizer::new(self, use_constraints);
         optimizer.run(max_iter as usize);

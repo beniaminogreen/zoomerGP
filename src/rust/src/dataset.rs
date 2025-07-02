@@ -2,7 +2,7 @@ use ndarray::{ArrayView2, ArrayView1, Array1, Array2, Axis};
 use crate::dual_number::DualArr;
 
 #[allow(non_snake_case)]
-pub trait DataManager {
+pub trait DataManager : Send + Sync {
     fn outcome(&self) -> ArrayView1<f64>;
     fn get_X(&self) -> ArrayView2<f64>;
     fn get_x_scale_factor(&self) -> Array1<f64>;

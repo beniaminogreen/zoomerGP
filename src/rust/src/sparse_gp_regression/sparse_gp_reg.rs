@@ -8,7 +8,7 @@ use std::sync::Arc;
 use ndarray::{Array2, Array1, ArrayView2};
 use extendr_api::prelude::*;
 
-use crate::kernel::utils::parse_kernel_recursive;
+use crate::kernel::utils::{build_kernel_tree, parse_kernel_recursive};
 
 
 #[allow(non_snake_case)]
@@ -75,6 +75,7 @@ impl SparseGPRegression {
             constraints : Constraints::new(constraints)
         }
     }
+
 }
 
 extendr_module! {

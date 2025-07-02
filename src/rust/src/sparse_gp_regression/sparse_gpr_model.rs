@@ -3,18 +3,21 @@ use extendr_api::{extendr, extendr_module};
 use ndarray::{Array1, Array2, ArrayView2, Axis};
 use crate::constraint::constraints::Constraints;
 use crate::dual_number::Dual;
-use crate::kernel::utils::{fast_gradient_matrix, kernel_matrix_update, recusive_select_kernel, stable_log_det};
+use crate::kernel::utils::{build_kernel_tree, fast_gradient_matrix, kernel_matrix_update, recusive_select_kernel, stable_log_det};
 use crate::predict::PredictionOutput;
 use crate::sparse_gp_regression::sparse_gp_reg::SparseGPRegression;
 
 use ndarray_linalg::solve::Inverse;
 use ndarray_linalg::Trace;
-use crate::latent_gp_regression::latent_gp_reg::LatentGPR;
 use crate::likelihood::Likelihood;
 use crate::model::{ClonableModel, Model};
 
 #[extendr]
 impl Model for SparseGPRegression {
+
+    fn display_kernel(&self) -> String {
+        build_kernel_tree(self.kernel.as_ref(), "", "A", true)
+    }
     fn get_n_params(&self) -> usize {
         self.n_params
     }
@@ -236,7 +239,7 @@ impl Model for SparseGPRegression {
 }
 
 impl ClonableModel for SparseGPRegression {
-    fn clone_box(&self) -> Box<dyn Model> {
+    fn clone_box(&self) -> Box<dyn ClonableModel> {
         Box::new(self.clone())
     }
 }

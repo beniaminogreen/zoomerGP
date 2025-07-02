@@ -2,7 +2,7 @@ use crate::dual_number::Dual;
 
 use std::ops::Neg;
 
-pub trait Likelihood {
+pub trait Likelihood : Send + Sync {
     fn log_like(&self, params : &[f64], gradient: bool) -> Dual;
     fn clone_box(&self) -> Box<dyn Likelihood>;
 }
