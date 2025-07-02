@@ -1,3 +1,4 @@
+use crate::model::ClonableModel;
 use ndarray::{Array1, Array2, Array3, ArrayView1, ArrayView2, Axis};
 use crate::constraint::constraints::Constraints;
 use crate::dual_number::Dual;
@@ -10,7 +11,7 @@ use extendr_api::{extendr, extendr_module};
 use rand_distr::num_traits::real::Real;
 use ndarray_linalg::Inverse;
 use crate::kernel::utils::{add_nugget_to_matrix, kernel_matrix_update, recusive_select_kernel};
-
+use crate::likelihood::Likelihood;
 use crate::sparse_latent_gp_regression::sparse_latent_gp_reg::SparseLatentGPR;
 
 const NUM_FORWARD_ITER : usize = 5;
@@ -172,6 +173,12 @@ impl Model for SparseLatentGPR{
         self.kernel.set_params(&kernel_params);
         self.v = Array1::from(latent_params.to_vec());
         self.stale = true;
+    }
+}
+
+impl ClonableModel for SparseLatentGPR {
+    fn clone_box(&self) -> Box<dyn Model> {
+        Box::new(self.clone())
     }
 }
 

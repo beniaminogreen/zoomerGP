@@ -9,8 +9,9 @@ use crate::sparse_gp_regression::sparse_gp_reg::SparseGPRegression;
 
 use ndarray_linalg::solve::Inverse;
 use ndarray_linalg::Trace;
-
-use crate::model::Model;
+use crate::latent_gp_regression::latent_gp_reg::LatentGPR;
+use crate::likelihood::Likelihood;
+use crate::model::{ClonableModel, Model};
 
 #[extendr]
 impl Model for SparseGPRegression {
@@ -35,7 +36,7 @@ impl Model for SparseGPRegression {
 
         kernel_matrix_update(self.K_nm.view_mut(), X,self.X_inducing.view(), &*self.kernel);
         kernel_matrix_update(self.K_mm.view_mut(), self.X_inducing.view(),self.X_inducing.view(), &*self.kernel);
-        
+
         let m = self.K_mm.nrows();
         for i in 0..m {
             self.K_mm[[i, i]] += 0.000001;
@@ -233,6 +234,13 @@ impl Model for SparseGPRegression {
         ))
     }
 }
+
+impl ClonableModel for SparseGPRegression {
+    fn clone_box(&self) -> Box<dyn Model> {
+        Box::new(self.clone())
+    }
+}
+
 
 extendr_module! {
     mod sparse_gpr_model;

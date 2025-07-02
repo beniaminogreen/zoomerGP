@@ -3,14 +3,16 @@ use crate::constraint::constraints::Constraints;
 use crate::dual_number::Dual;
 use crate::latent_gp_regression::latent_gp_reg::LatentGPR;
 use crate::lyapunov::{lyap_newton_shulz_backward, lyap_newton_shulz_fwd};
-use crate::model::Model;
+use crate::model::{ClonableModel, Model};
 use crate::predict::PredictionOutput;
 
 use std::ops::Neg;
 use extendr_api::{extendr, extendr_module};
 use ndarray_linalg::Inverse;
 use rand_distr::num_traits::real::Real;
+use crate::gp_regression::gp_reg::GPRegression;
 use crate::kernel::utils::{add_nugget_to_matrix, kernel_matrix_update, recusive_select_kernel};
+use crate::likelihood::Likelihood;
 
 const NUM_FORWARD_ITER : usize = 5;
 const NUM_BACKWARD_ITER : usize = 5;
@@ -135,6 +137,12 @@ impl Model for LatentGPR{
         self.kernel.set_params(&kernel_params);
         self.v = Array1::from(latent_params.to_vec());
         self.stale = true;
+    }
+}
+
+impl ClonableModel for LatentGPR {
+    fn clone_box(&self) -> Box<dyn Model> {
+        Box::new(self.clone())
     }
 }
 

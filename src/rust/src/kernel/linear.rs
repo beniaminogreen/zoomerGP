@@ -6,6 +6,7 @@ use crate::constraint::constraint::Constraint;
 use std::fmt::Debug;
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub struct LinearKernel {
     sigmas: Array1<f64>,
     n_params: usize,
@@ -69,6 +70,10 @@ impl Kernel for LinearKernel {
 
     fn log_prior(&self, gradient : bool) -> Dual {
         todo!()
+    }
+
+    fn clone_box(&self) -> Box<dyn Kernel> {
+        Box::new(self.clone())
     }
 }
 

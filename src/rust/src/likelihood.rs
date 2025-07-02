@@ -4,8 +4,11 @@ use std::ops::Neg;
 
 pub trait Likelihood {
     fn log_like(&self, params : &[f64], gradient: bool) -> Dual;
+    fn clone_box(&self) -> Box<dyn Likelihood>;
 }
 
+
+#[derive(Debug, Clone)]
 pub struct BinomialLogit {
     pub y : Vec<bool>,
 }
@@ -27,5 +30,15 @@ impl Likelihood for BinomialLogit {
 
         Dual::from((log_like, grad))
 
+    }
+
+    fn clone_box(&self) -> Box<dyn Likelihood> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<dyn Likelihood> {
+    fn clone(&self) -> Self {
+        self.clone_box()
     }
 }

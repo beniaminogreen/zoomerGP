@@ -6,6 +6,7 @@ use crate::constraint::constraint::Constraint;
 use std::fmt::Debug;
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub struct IndicatorKernel {
     operating_columns: Vec<usize>,
     sigma: f64,
@@ -23,6 +24,9 @@ impl IndicatorKernel {
 }
 
 impl Kernel for IndicatorKernel {
+    fn clone_box(&self) -> Box<dyn Kernel> {
+        Box::new(self.clone())
+    }
     fn rec_constraint(&self ) -> Vec<Constraint> {
         vec![Constraint::new_positive_sp(); 1]
     }

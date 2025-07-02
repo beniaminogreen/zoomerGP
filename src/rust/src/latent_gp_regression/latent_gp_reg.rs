@@ -10,6 +10,7 @@ use crate::kernel::utils::parse_kernel_recursive;
 
 #[allow(non_snake_case)]
 #[extendr]
+#[derive(Clone)]
 pub struct LatentGPR{
     pub kernel : Box<dyn Kernel>,
     pub dataset : Arc<dyn DataManager>,
@@ -45,8 +46,8 @@ impl LatentGPR {
         let mut constraints = kernel.rec_constraint();
         let latent_constraints = vec![Constraint::new_no_constraint(); n];
         constraints.extend(latent_constraints);
-        
-        
+
+
 
         Self {
             n_params,

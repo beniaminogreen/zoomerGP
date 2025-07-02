@@ -8,6 +8,7 @@ const NEG_TWO_PI_SQ: f64 = -2.0 * PI * PI;
 use crate::constraint::constraint::Constraint;
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub struct SpectralMixtureKernel {
     weights: Array1<f64>,
     n_params: usize,
@@ -117,6 +118,10 @@ impl Kernel for SpectralMixtureKernel {
 
     fn log_prior(&self, gradient : bool) -> Dual {
         todo!()
+    }
+
+    fn clone_box(&self) -> Box<dyn Kernel> {
+        Box::new(self.clone())
     }
 }
 

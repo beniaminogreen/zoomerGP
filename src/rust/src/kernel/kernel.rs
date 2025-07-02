@@ -12,4 +12,11 @@ pub trait Kernel : Debug + Sync {
     fn children(&self) -> &[Box<dyn Kernel>];
     fn describe(&self) -> String;
     fn log_prior(&self, gradient : bool) -> Dual;
+    fn clone_box(&self) -> Box<dyn Kernel>;
+}
+
+impl Clone for Box<dyn Kernel> {
+    fn clone(&self) -> Self {
+        self.clone_box()
+    }
 }

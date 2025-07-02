@@ -8,7 +8,7 @@ use rand::rng;
 use rand_distr::{Normal, Distribution, Uniform};
 
 use ndarray::{Array1, Array2, ArrayView2, Axis};
-use crate::model::{Model, TestModel};
+use crate::model::{ClonableModel, Model, TestModel};
 use crate::predict::PredictionOutput;
 use std::cmp::Ordering;
 use crate::constraint::constraints::Constraints;
@@ -27,7 +27,7 @@ struct CoinSVGP{
     abs_grad_sum: Array2<f64>,
     grad_sum: Array2<f64>,
     reward: Array2<f64>,
-    model : Box<dyn Model>,
+    model : Box<dyn ClonableModel>,
     constraints: Constraints
 }
 
@@ -121,7 +121,7 @@ pub fn compute_kernel_matrix(X: ArrayView2<f64>) -> (Array2<f64>, Array1<f64>) {
  }*/
 
  impl CoinSVGP{
-     fn new(lambdas: Array2<f64>, model : Box<dyn Model>) -> Self {
+     fn new(lambdas: Array2<f64>, model : Box<dyn ClonableModel>) -> Self {
          let n = lambdas.nrows();
          let d = lambdas.ncols();
 
@@ -235,21 +235,6 @@ pub fn compute_kernel_matrix(X: ArrayView2<f64>) -> (Array2<f64>, Array1<f64>) {
          let data: Vec<f64> = (0..d*n_particles).map(|_| normal.sample(&mut rng)).collect();
          let lambdas = Array2::from_shape_vec((n_particles, d), data).unwrap();
 
-
-         Self::new(lambdas.to_owned(), Box::new(model))
-     }
-
-     fn r_new_test(n_particles : usize) -> Self {
-         let model = TestModel{params : [0.0,0.0]};
-
-         let d = model.get_n_params();
-
-         let normal = Uniform::new(-15.0, 15.00).unwrap();
-         let mut rng = rng();
-
-         // Create a 1D array of 10 elements with normal random values
-         let data: Vec<f64> = (0..d*n_particles).map(|_| normal.sample(&mut rng)).collect();
-         let lambdas = Array2::from_shape_vec((n_particles, d), data).unwrap();
 
          Self::new(lambdas.to_owned(), Box::new(model))
      }

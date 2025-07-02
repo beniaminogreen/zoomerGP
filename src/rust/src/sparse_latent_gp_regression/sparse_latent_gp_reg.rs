@@ -10,6 +10,7 @@ use crate::kernel::utils::parse_kernel_recursive;
 
 #[allow(non_snake_case)]
 #[extendr]
+#[derive(Clone)]
 pub struct SparseLatentGPR{
     pub kernel : Box<dyn Kernel>,
     pub dataset : Arc<dyn DataManager>,

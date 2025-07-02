@@ -8,9 +8,13 @@ use crate::dual_number::Dual;
 use crate::constraint::constraint::Constraint;
 
 use std::f64::consts::PI;
+use crate::likelihood::Likelihood;
 
+pub trait ClonableModel : Model {
+    fn clone_box(&self) -> Box<dyn Model>;
+}
 
-pub trait Model {
+pub trait Model{
     fn get_n_params(&self) -> usize;
 
     fn recommend_constraints(&self) -> Constraints;
@@ -86,7 +90,6 @@ impl Model for TestModel {
 
 
         Dual::from((log_like, grad))
-
     }
 }
 

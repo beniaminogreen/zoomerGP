@@ -5,6 +5,7 @@ use crate::dual_number::Dual;
 use crate::constraint::constraint::Constraint;
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub struct MultiplicativeKernel {
     children: [Box<dyn Kernel>; 2],
     n_params: usize
@@ -75,6 +76,10 @@ impl Kernel for MultiplicativeKernel {
 
     fn log_prior(&self, gradient : bool) -> Dual {
         todo!()
+    }
+
+    fn clone_box(&self) -> Box<dyn Kernel> {
+        Box::new(self.clone())
     }
 }
 

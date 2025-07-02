@@ -8,6 +8,7 @@ use statrs::distribution::{Gamma, Continuous};
 
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub struct ExpQuadKernel {
     sigma: f64,
     lengthscales: Array1<f64>,
@@ -103,6 +104,10 @@ impl Kernel for ExpQuadKernel {
         }
 
         Dual::from((result, grad))
+    }
+
+    fn clone_box(&self) -> Box<dyn Kernel> {
+        Box::new(self.clone())
     }
 }
 

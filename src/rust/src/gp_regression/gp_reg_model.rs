@@ -9,8 +9,8 @@ use crate::predict::PredictionOutput;
 use ndarray_linalg::solve::{Inverse, Determinant};
 
 use extendr_api::prelude::*;
-
-use crate::model::Model;
+use crate::likelihood::Likelihood;
+use crate::model::{ClonableModel, Model};
 
 #[extendr]
 impl Model for GPRegression {
@@ -182,6 +182,12 @@ impl Model for GPRegression {
         return out
     }
 
+}
+
+impl ClonableModel for GPRegression {
+    fn clone_box(&self) -> Box<dyn Model> {
+        Box::new(self.clone())
+    }
 }
 
 extendr_module! {

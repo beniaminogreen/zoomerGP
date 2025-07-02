@@ -12,9 +12,11 @@ use extendr_api::prelude::*;
 
 use crate::coin_optimizer::CoinOptimizer;
 use crate::kernel::utils::{build_kernel_tree, parse_kernel_recursive};
+use crate::model::ClonableModel;
 
 #[allow(non_snake_case)]
 #[extendr]
+#[derive(Clone)]
 pub struct GPRegression{
     pub kernel : Box<dyn Kernel>,
     pub dataset : Arc<dyn DataManager>,
@@ -82,6 +84,7 @@ impl GPRegression {
     }
 
 }
+
 
 
 extendr_module! {

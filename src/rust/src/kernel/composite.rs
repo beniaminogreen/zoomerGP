@@ -5,6 +5,7 @@ use crate::constraint::constraint::Constraint;
 use crate::dual_number::Dual;
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub struct CompositeKernel {
     kernels: Vec<Box<dyn Kernel>>,
     num_params : usize
@@ -22,6 +23,9 @@ impl CompositeKernel {
 }
 
 impl Kernel for CompositeKernel {
+    fn clone_box(&self) -> Box<dyn Kernel> {
+        Box::new(self.clone())
+    }
     fn rec_constraint(&self) -> Vec<Constraint> {
         let mut out = Vec::new();
         for kernel in self.kernels.iter() {
