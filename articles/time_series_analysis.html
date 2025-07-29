@@ -63,42 +63,117 @@
 
     
     
-<p>This vignette shows how to perform a simplified version of the case
-study presented in Rassmusen and Williams (2006, p 119-121).</p>
+<div class="section level2">
+<h2 id="learner-outcomes">Learner Outcomes:<a class="anchor" aria-label="anchor" href="#learner-outcomes"></a>
+</h2>
+<p>This vignette demonstrates a simplified version of the Mauna Loa case
+study presented by <span class="citation">Rasmussen and Williams (2006,
+119–21)</span>, using <code>zoomerGP</code>. The analysis involves
+fitting an additive GP model to co2 data collected at the <a href="https://scrippsco2.ucsd.edu/data/atmospheric_co2/" class="external-link">Mauna Loa
+Observatory</a> from from 1959 to 1997. The data are included with R in
+the <code>co2</code> dataset.</p>
+<p>After completing the vignette, you should be able to:</p>
+<ol style="list-style-type: decimal">
+<li>Be able to write and fit a basic GP model with Empirical Bayes using
+<code>zoomerGP</code>
+</li>
+<li>Extract predictions from this model and plot them</li>
+<li>Use <code>zoomerGP</code> to generate predictions from
+sub-components of the model and examine them</li>
+</ol>
+</div>
+<div class="section level2">
+<h2 id="getting-started-setup-and-data-processing">Getting Started: Setup and Data Processing<a class="anchor" aria-label="anchor" href="#getting-started-setup-and-data-processing"></a>
+</h2>
+<p>First, we load the libraries we will use for data analysis
+(<code>zoomerGP</code> for fitting the GP models and
+<code>ggplot2</code> for plotting the raw data). We then transform the
+built-in co2 dataset to a tidy dataframe with one row per
+observation.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://beniamino.org/zoomerGP/">zoomerGP</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tibble.tidyverse.org/" class="external-link">tibble</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  year <span class="op">=</span> <span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">co2</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span><span class="op">/</span><span class="fl">12</span> <span class="op">+</span> <span class="fl">1959</span>,</span>
 <span>  co2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">co2</span><span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
+<span><span class="co">#&gt;       year    co2</span></span>
+<span><span class="co">#&gt; 1 1959.000 315.42</span></span>
+<span><span class="co">#&gt; 2 1959.083 316.31</span></span>
+<span><span class="co">#&gt; 3 1959.167 316.50</span></span>
+<span><span class="co">#&gt; 4 1959.250 317.56</span></span>
+<span><span class="co">#&gt; 5 1959.333 318.13</span></span>
+<span><span class="co">#&gt; 6 1959.417 318.00</span></span></code></pre></div>
+<p>Using <code>ggplot2</code>, we can then plot the raw data:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">data</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x<span class="op">=</span><span class="va">year</span>, y<span class="op">=</span><span class="va">co2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="time_series_analysis_files/figure-html/unnamed-chunk-2-1.png" width="100%"></p>
-<p>Now we can begin analyzing the data using Gaussian Processes.
-Examining the data, and based on our understanding of the climate, it
-looks like this data can be well-described by a long-term trend plus a
-periodic component.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">data</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x<span class="op">=</span><span class="va">year</span>, y<span class="op">=</span><span class="va">co2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">xlab</a></span><span class="op">(</span><span class="st">"Year"</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ylab</a></span><span class="op">(</span><span class="st">"co2 concentration (parts per million)"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="time_series_analysis_files/figure-html/unnamed-chunk-2-1.png" width="100%">
+## Specifying and Fitting the Model</p>
+<p>The data appear to be reflective of a long-term process combined with
+a seasonal process which repeats every 12 months. This motivates a
+simplified version of the model described by Rassmusen and Williams
+(2005), which describes the co2 concentration observed at a given time
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>y</mi><mi>i</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(y_i)</annotation></semantics></math>
+as follows:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>y</mi><mi>i</mi></msub><mo>=</mo><mi>α</mi><mo>+</mo><msub><mi>f</mi><mn>1</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><msub><mi>f</mi><mn>2</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><msub><mi>ε</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">
+y_i = \alpha + f_1(t) + f_2(t) + \varepsilon_i
+</annotation></semantics></math></p>
+<p>Where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math>
+is an intercept term, and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ε</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\varepsilon_i</annotation></semantics></math>
+is a noise term.
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>f</mi><mn>1</mn></msub><annotation encoding="application/x-tex">f_1</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>f</mi><mn>2</mn></msub><annotation encoding="application/x-tex">f_2</annotation></semantics></math>
+are mean-zero Gaussian processes that absorb the long-term and periodic
+components, respectively. Specifically, we parameterize the kernels as
+described below. The formulas for the RBF and Periodic kernels are are
+taken from <em>Bayesian Data Analysis</em>, 3rd edition <span class="citation">(Gelman et al. 2021, 515)</span>.</p>
+<ul>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>f</mi><mn>1</mn></msub><annotation encoding="application/x-tex">f_1</annotation></semantics></math>
+absorbs the long-term trend and is parameterized with an RBF kernel:
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>f</mi><mn>1</mn></msub><mo>∼</mo><mi>G</mi><mi>P</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>0</mn><mo>,</mo><msub><mi>k</mi><mn>1</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><msub><mi>k</mi><mn>2</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo>,</mo><mi>t</mi><mi>′</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><msubsup><mi>σ</mi><mn>1</mn><mn>2</mn></msubsup><mo>exp</mo><mrow><mo minsize="2.4" maxsize="2.4" stretchy="false" form="prefix">(</mo><mo>−</mo><mfrac><msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo>−</mo><mi>t</mi><mi>′</mi><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn></msup><mrow><mn>2</mn><msubsup><mi>l</mi><mn>1</mn><mn>2</mn></msubsup></mrow></mfrac><mo minsize="2.4" maxsize="2.4" stretchy="false" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">f_1 \sim GP(0, k_1), \quad k_2(t,t') = \sigma_1^2 \exp{\bigg(-\frac{(t-t')^2}{2l_1^2}\bigg)}</annotation></semantics></math>
+</li>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>f</mi><mn>2</mn></msub><annotation encoding="application/x-tex">f_2</annotation></semantics></math>
+absorbs the periodic trend, and is parameterized by an RBF kernel
+multiplied by a periodic kernel with a period of one year:
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>f</mi><mn>2</mn></msub><mo>∼</mo><mi>G</mi><mi>P</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>0</mn><mo>,</mo><msub><mi>k</mi><mn>2</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><msub><mi>k</mi><mn>2</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo>,</mo><mi>t</mi><mi>′</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><msubsup><mi>σ</mi><mn>2</mn><mn>2</mn></msubsup><mo>exp</mo><mrow><mo minsize="2.4" maxsize="2.4" stretchy="false" form="prefix">(</mo><mo>−</mo><mfrac><msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo>−</mo><mi>t</mi><mi>′</mi><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn></msup><mrow><mn>2</mn><msubsup><mi>l</mi><mn>2</mn><mn>2</mn></msubsup></mrow></mfrac><mo minsize="2.4" maxsize="2.4" stretchy="false" form="postfix">)</mo></mrow><msubsup><mi>σ</mi><mn>3</mn><mn>2</mn></msubsup><mo>exp</mo><mrow><mo minsize="2.4" maxsize="2.4" stretchy="false" form="prefix">(</mo><mo>−</mo><mfrac><mrow><msup><mo>sin</mo><mn>2</mn></msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>π</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo>−</mo><mi>t</mi><mi>′</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow></mrow><msubsup><mi>l</mi><mn>3</mn><mn>2</mn></msubsup></mfrac><mo minsize="2.4" maxsize="2.4" stretchy="false" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">f_2 \sim GP(0, k_2), \quad k_2(t,t') = \sigma_2^2 \exp{\bigg(-\frac{(t-t')^2}{2l_2^2}\bigg)} \sigma_3^2 \exp{\bigg(-\frac{\sin^2(\pi (t-t'))}{l_3^2}\bigg)}</annotation></semantics></math>.
+The inclusion of the RBF kernel allows for the periodic component to
+change slightly over time.</li>
+</ul>
+<p><code>zoomerGP</code> provides a convenient formula syntax to
+describe this model, which we then fit using Empirical Bayes.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">gp_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gaussian_process.html">gaussian_process</a></span><span class="op">(</span></span>
-<span>  <span class="va">co2</span> <span class="op">~</span> <span class="fu">periodic</span><span class="op">(</span><span class="va">year</span>, periods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.0</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">rbf</span><span class="op">(</span><span class="va">year</span><span class="op">)</span>, </span>
-<span>  data <span class="op">=</span> <span class="va">data</span></span>
+<span>  <span class="va">co2</span> <span class="op">~</span> <span class="fu">periodic</span><span class="op">(</span><span class="va">year</span>, periods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.0</span><span class="op">)</span><span class="op">)</span><span class="op">*</span><span class="fu">rbf</span><span class="op">(</span><span class="va">year</span><span class="op">)</span> <span class="op">+</span> <span class="fu">rbf</span><span class="op">(</span><span class="va">year</span><span class="op">)</span>, </span>
+<span>  data <span class="op">=</span> <span class="va">data</span>, </span>
+<span>  sparse <span class="op">=</span> <span class="cn">F</span>, </span>
 <span>  <span class="op">)</span></span>
 <span><span class="va">gp_model</span></span>
 <span><span class="co">#&gt; A Gaussian Process model with 468 observations</span></span>
-<span><span class="co">#&gt; Log-Likelihood: -375.984632</span></span>
-<span><span class="co">#&gt; R-Squared: 0.998943</span></span>
+<span><span class="co">#&gt; Log-Likelihood: -281.155936</span></span>
+<span><span class="co">#&gt; R-Squared: 0.999801</span></span>
 <span><span class="co">#&gt; Kernel Specification:</span></span>
 <span><span class="co">#&gt; └──  (A) Plus (+)</span></span>
-<span><span class="co">#&gt;     ├──  (AA) RBF Kernel</span></span>
+<span><span class="co">#&gt;     ├──  (AA) Times (*)</span></span>
+<span><span class="co">#&gt;     │   ├──  (AAA) Periodic Kernel</span></span>
+<span><span class="co">#&gt;     │   └──  (AAB) RBF Kernel</span></span>
 <span><span class="co">#&gt;     └──  (AB) RBF Kernel</span></span></code></pre></div>
+<p>Examining the model fit object, we can see the log-likelihood,
+r-squared and.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">prediction_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>year <span class="op">=</span> <span class="fl">1959</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">60</span>, length.out <span class="op">=</span> <span class="fl">500</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">prediction_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>year <span class="op">=</span> <span class="fl">1959</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">90</span>, length.out <span class="op">=</span> <span class="fl">500</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">prediction_data</span><span class="op">$</span><span class="va">preds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">gp_model</span>, <span class="va">prediction_data</span><span class="op">)</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span></span>
 <span><span class="va">prediction_data</span><span class="op">$</span><span class="va">pred_var</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">gp_model</span>, <span class="va">prediction_data</span><span class="op">)</span><span class="op">[</span>,<span class="fl">3</span><span class="op">]</span></span>
 <span></span>
@@ -111,7 +186,22 @@ periodic component.</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">prediction_data</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x<span class="op">=</span><span class="va">year</span>, y<span class="op">=</span><span class="va">ci_hi</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="fl">2</span>, col <span class="op">=</span> <span class="st">"darkgrey"</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">prediction_data</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x<span class="op">=</span><span class="va">year</span>, y<span class="op">=</span><span class="va">ci_lo</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="fl">2</span>, col <span class="op">=</span> <span class="st">"darkgrey"</span><span class="op">)</span> </span></code></pre></div>
 <p><img src="time_series_analysis_files/figure-html/unnamed-chunk-4-1.png" width="100%"></p>
-  </main>
+<p>If we want to extract the periodic component, we can easily do so by
+isolating the “”</p>
+<div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
+<div id="ref-gelmanbda" class="csl-entry">
+Gelman, Andrew, John B. Carlin, Hal S. Stern, David B. Dunson, Aki
+Vehtari, and Donald B. Rubin. 2021. <em>Bayesian Data Analysis</em>. 3rd
+ed. Chapman; Hall/CRC. <a href="https://sites.stat.columbia.edu/gelman/book/BDA3.pdf" class="external-link">https://sites.stat.columbia.edu/gelman/book/BDA3.pdf</a>.
+</div>
+<div id="ref-Rasmussen2006" class="csl-entry">
+Rasmussen, Carl Edward, and Christopher K. I. Williams. 2006.
+<em>Gaussian Processes for Machine Learning</em>. The MIT Press.
+</div>
+</div>
+</div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 

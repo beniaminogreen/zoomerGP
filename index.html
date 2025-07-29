@@ -51,50 +51,68 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="gaussian-process-regression-gpr-in-r">Gaussian Process Regression (GPR) in R<a class="anchor" aria-label="anchor" href="#gaussian-process-regression-gpr-in-r"></a>
+<div class="page-header"><h1 id="zoomergp-gaussian-process-regression-in-r">ZoomerGP: Gaussian Process Regression in R<a class="anchor" aria-label="anchor" href="#zoomergp-gaussian-process-regression-in-r"></a>
 </h1></div>
-<p><code>zoomerGP</code> is an R package that allows you to compose and fit Gaussian Process Regression models to data. The core inference code is implemented in Rust for speed, and approximations are available to allow users to fit models to large datasets (N &gt; 10,000). At the moment, only the gaussian likelihood is supported, but functionality to fit other likelihoods with Variational Inference is in development.</p>
+<p><code>zoomerGP</code> provides a fast and composable language to write, fit, and explore Gaussian Process models in R. The package allows users to compose a Gaussian process kernel using a consise formula syntax, and tune hyperparameters through type-2 ML or Variational Inference (SVGD). Both Gaussian and non-Gaussian Likelihoods are supported.</p>
 <div class="section level2">
-<h2 id="supported-kernel-functions">Supported Kernel Functions:<a class="anchor" aria-label="anchor" href="#supported-kernel-functions"></a>
+<h2 id="kernel-formulas">Kernel formulas:<a class="anchor" aria-label="anchor" href="#kernel-formulas"></a>
 </h2>
-<p>The flagship feature of this package is a domain-specific language that helps you easily compose complicated kernels out of basic building blocks using a formula syntax.</p>
-<p>As an example, you can specify an rbf (gaussian) kernel that acts on a single variable, x, with the following syntax:</p>
+<p><code>ZoomerGP</code>’s flagship feature is a tidy formula interface that allows users to cleanly specify complex Gaussian-process models. As an example, you can specify and fit a Gaussian Process with an RBF covariance function to a dataset with the following formula:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/gaussian_process.html">gaussian_process</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">rbf</span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">data</span><span class="op">)</span></span></code></pre></div>
-<p>If you want to regress Y on an ARD-RBF kernel that acts on all columns of the input, you can simply use <code>rbf()</code>:</p>
+<p>This syntax also allows you to arbitrarily combine different kernels buy adding and multiplying them. As an example, one can try to fit a periodic trend that changes over time and a long-term trend to the data by using the following code:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/gaussian_process.html">gaussian_process</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">rbf</span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">data</span><span class="op">)</span></span></code></pre></div>
-<p>This is because any kernel function called with no arguments will select all columns by default. Additionally, please note that all kernels are Automatic Relevance Determination (ARD) kernels, so a separate bandwidth is fit for each input dimension. This generally delivers superior performance in higher dimensions as it allows the regression to ‘zero out’ or not respond to input variables that do not matter.</p>
-<p>You can also combine kernels by adding and multiplying them with <code>+</code> and <code>*</code>. To give an example, we can fit a linear kernel times an RBF kernel with the following code:</p>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/gaussian_process.html">gaussian_process</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">periodic</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">*</span> <span class="fu">rbf</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">+</span> <span class="fu">rbf</span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">data</span><span class="op">)</span></span></code></pre></div>
+<p>Each kernel can also act on multiple variables, as shown below:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/gaussian_process.html">gaussian_process</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">linear</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">*</span> <span class="fu">rbf</span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">data</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">## adding in another two predictors, a and b that enter seperately</span></span>
-<span><span class="fu"><a href="reference/gaussian_process.html">gaussian_process</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">linear</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">*</span> <span class="fu">rbf</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">+</span> <span class="fu">rbf</span><span class="op">(</span><span class="va">a</span>,<span class="va">b</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">data</span><span class="op">)</span></span></code></pre></div>
-<p><code>+</code> and <code>*</code> can be arbitrarily chained to combine as many kernels as you would like. If you would like to fit a very complex function, consider using the spectral mixture (<code>spectral[0-9]()</code>) kernels, which can generalize any stationary covariance function. These are great for fitting complex, or periodic functions (esp. time series).</p>
-<p>You can also see a list of currently implemented kernels below. Formulas for the kernels and more features are forthcoming:</p>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/gaussian_process.html">gaussian_process</a></span><span class="op">(</span><span class="va">a</span> <span class="op">~</span> <span class="fu">periodic</span><span class="op">(</span><span class="va">b</span>,<span class="va">c</span><span class="op">)</span> <span class="op">*</span> <span class="fu">rbf</span><span class="op">(</span><span class="va">d</span>,<span class="va">e</span>,<span class="va">f</span>,<span class="va">g</span><span class="op">)</span> <span class="op">+</span> <span class="fu">rbf</span><span class="op">(</span><span class="va">h</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">data</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="avaliable-kernels">Avaliable Kernels:<a class="anchor" aria-label="anchor" href="#avaliable-kernels"></a>
+</h2>
+<p>At present the following kernels are implemented:</p>
 <table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
 <thead><tr class="header">
 <th align="left">Kernel</th>
-<th align="center">DSL Name</th>
+<th align="center">Function Name</th>
+<th align="center">Notes</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td align="left">Squared Exponential</td>
 <td align="center">rbf()</td>
+<td align="center">Results in a smooth, infinitely-differentiable posterior. Too smooth for most applications</td>
 </tr>
 <tr class="even">
 <td align="left">Spectral Mixture</td>
-<td align="center">spectral<a href="">0-9</a>
+<td align="center">spectral<a href="">0-5</a>
 </td>
+<td align="center">Spectal mixture kernel with 1,2,3,4, or 5 components. Can recover any stationary covariance function but is very expensive to fit.</td>
 </tr>
 <tr class="odd">
 <td align="left">Linear</td>
 <td align="center">linear()</td>
+<td align="center">Recovers a linear trend</td>
 </tr>
 <tr class="even">
 <td align="left">Indicator</td>
 <td align="center">indicator()</td>
+<td align="center">Equal to <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi><mi>i</mi><mi>g</mi><mi>m</mi><msup><mi>a</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">sigma^2</annotation></semantics></math> if <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi><mo>=</mo><mi>x</mi><mi>′</mi></mrow><annotation encoding="application/x-tex">x=x'</annotation></semantics></math>, zero otherwise. Useful when accounting for clustering.</td>
+</tr>
+<tr class="odd">
+<td align="left">If / mask</td>
+<td align="center">mask()</td>
+<td align="center">Equal of one if both <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math> and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi><mi>′</mi></mrow><annotation encoding="application/x-tex">x'</annotation></semantics></math> are equal to one, zero otherwise. Most useful when ‘masking’ out another kernel so it only acts on certain pairs of inputs</td>
+</tr>
+<tr class="even">
+<td align="left">Periodic</td>
+<td align="center">periodic()</td>
+<td align="center">Periodic similarity function. Can accept as a keyword argument a vector of periods associated with each dimension.</td>
 </tr>
 </tbody>
 </table>
@@ -102,7 +120,7 @@
 <div class="section level2">
 <h2 id="fitting-to-large-datasets-with-sparse-approximations">Fitting to Large Datasets with Sparse Approximations.<a class="anchor" aria-label="anchor" href="#fitting-to-large-datasets-with-sparse-approximations"></a>
 </h2>
-<p>Gaussian Process Regression are computationally intensive, and generally takes <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>n</mi><mn>3</mn></msup><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">O(n^3)</annotation></semantics></math> computations to fit. To allow the method to scale to large datasets, this package implements the projected process approximation as described in Rassmusen and Williams’s (2005) Gaussian Processes for Machine Learning. To turn this approximation on, use the <code>sparse=T</code> argument when fitting the gaussian processes please be aware that you may also need to change (reduce) the default value of the number of inducing points (<code>n_points</code>) for numerical stability.</p>
+<p>Gaussian Process Regression are computationally intensive, and generally take <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>n</mi><mn>3</mn></msup><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">O(n^3)</annotation></semantics></math> computations to fit. To allow the method to scale to large datasets, this package implements the projected process approximation as described in Rassmusen and Williams’s (2005) Gaussian Processes for Machine Learning. To turn this approximation on, use the <code>sparse=T</code> argument when fitting the gaussian processes please be aware that you may also need to change the default value of the number of inducing points (<code>n_points</code>) for numerical stability.</p>
 </div>
 <div class="section level2">
 <h2 id="optimization-methods">Optimization Methods<a class="anchor" aria-label="anchor" href="#optimization-methods"></a>
@@ -118,20 +136,21 @@
 </ul>
 </div>
 <div class="section level2">
-<h2 id="feature-roadmap">Feature Roadmap<a class="anchor" aria-label="anchor" href="#feature-roadmap"></a>
+<h2 id="fitting-non-gaussian-likelihoods-with-variational-inference">Fitting Non-Gaussian Likelihoods with Variational Inference<a class="anchor" aria-label="anchor" href="#fitting-non-gaussian-likelihoods-with-variational-inference"></a>
 </h2>
-<p>The GPR package is a work in progress. This section summarizes the progress towards important feature goals we hope to include in the package:</p>
+<p><code>zoomerGP</code> also implements a variant of the <a href="https://arxiv.org/abs/2009.12141" class="external-link">Stein Variational Gaussian Processes</a> algorithm to perform variational inference over hyperparameters and latent function values when the likelihood is non-Gaussian. Specifically, we use the <a href="https://arxiv.org/abs/2301.11294" class="external-link">Coin Sampling</a> algorithm proposed by the same authors to provide a robust Variational Inference engine that does not require tuning by the user.</p>
+<p>At the moment, inference for the following non-Gaussian likelihoods are implemented:</p>
 <ul>
-<li><label><input type="checkbox" checked>Type-2 ML estimation of hyperparameters (empirical Bayes) for Gaussian likelihood.</label></li>
-<li><label><input type="checkbox" checked>Sparse approximations to Gaussian likelihood</label></li>
-<li><label><input type="checkbox" checked>Implement <a href="https://arxiv.org/pdf/1302.4245" class="external-link">spectral mixture kernels</a> to allow for more expressive modelling.</label></li>
-<li><label><input type="checkbox" checked><a href="https://arxiv.org/abs/1705.07795" class="external-link">COIN-optimizer</a> for fast fitting</label></li>
-<li>[] Implement derivatives of GP’s and average marginal effects (A.M.E.’s)</li>
-<li>[] Support for non-Gaussian likelihoods via variational Bayes.</li>
+<li>logistic regression (via <code>the logistic_gaussian_process</code> function).</li>
 </ul>
-<div class="section level3">
-<h3 id="installing-rust">Installing Rust<a class="anchor" aria-label="anchor" href="#installing-rust"></a>
-</h3>
+</div>
+</div>
+<div class="section level1">
+<h1 id="installation-instructions">Installation Instructions<a class="anchor" aria-label="anchor" href="#installation-instructions"></a>
+</h1>
+<div class="section level2">
+<h2 id="installing-rust">Installing Rust<a class="anchor" aria-label="anchor" href="#installing-rust"></a>
+</h2>
 <p>If your operating system or version of R is not installed, you must have the <a href="https://www.rust-lang.org/tools/install" class="external-link">Rust compiler</a> installed to compile this package from sources. After the package is compiled, Rust is no longer required, and can be safely uninstalled.</p>
 <div class="section level4">
 <h4 id="installing-rust-on-linux-or-mac">Installing Rust on Linux or Mac:<a class="anchor" aria-label="anchor" href="#installing-rust-on-linux-or-mac"></a>
@@ -145,7 +164,6 @@
 <p>To install Rust on windows, you can use the Rust installation wizard, <code>rustup-init.exe</code>, found <a href="https://forge.rust-lang.org/infra/other-installation-methods.html" class="external-link">at this site</a>. Depending on your version of Windows, you may see an error that looks something like this:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>error<span class="sc">:</span> toolchain <span class="st">'stable-x86_64-pc-windows-gnu'</span> is not installed</span></code></pre></div>
 <p>In this case, you should run <code>rustup install stable-x86_64-pc_windows-gnu</code> to install the missing toolchain. If you’re missing another toolchain, simply type this in the place of <code>stable-x86_64-pc_windows-gnu</code> in the command above.</p>
-</div>
 </div>
 <div class="section level3">
 <h3 id="installing-package-from-github">Installing Package from Github:<a class="anchor" aria-label="anchor" href="#installing-package-from-github"></a>
@@ -169,6 +187,7 @@
 </div>
 </div>
 </div>
+
   </main><aside class="col-md-3"><div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
