@@ -211,7 +211,7 @@ impl Model for SparseGPRegression {
 
         let k_mn_y = self.K_nm.t().dot(&self.response);
 
-        let output: Array1<f64> = K_star.dot(&int_inv).dot(&k_mn_y);
+        let output: Array1<f64> = K_star.dot(&int_inv).dot(&k_mn_y) + self.y_bar;
 
         let k_mm_inv = self.K_mm.inv().unwrap();
 

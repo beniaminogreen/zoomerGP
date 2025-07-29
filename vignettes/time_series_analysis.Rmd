@@ -5,9 +5,19 @@ vignette: >
   %\VignetteIndexEntry{Analysis of CO2 data with Gaussian Processes}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+bibliography: references.bib
 ---
 
-This vignette shows how to perform a simplified version of the case study presented in Rassmusen and Williams (2006, p 119-121). 
+## Learner Outcomes: 
+
+This vignette demonstrates a simplified version of the Mauna Loa case study presented by @Rasmussen2006 [p. 119-121],  using `zoomerGP`. The analysis involves fitting an additive GP model to co2 data collected at the [Mauna Loa Observatory](https://scrippsco2.ucsd.edu/data/atmospheric_co2/) from from 1959 to 1997. The data are included with R in the `co2` dataset. 
+
+After completing the vignette, you should be able to:
+
+1. Be able to write and fit a basic GP model with Empirical Bayes using `zoomerGP`
+2. Extract predictions from this model and plot them
+3. Use `zoomerGP` to generate predictions from sub-components of the model and examine them
+
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -16,37 +26,61 @@ knitr::opts_chunk$set(
 )
 ```
 
+## Getting Started: Setup and Data Processing
+
+First, we load the libraries we will use for data analysis (`zoomerGP` for fitting the GP models and `ggplot2` for plotting the raw data). We then transform the built-in co2 dataset to a tidy dataframe with one row per observation.
+
 ```{r setup}
 library(zoomerGP)
-library(tibble)
 library(ggplot2)
 
 data <- data.frame(
   year = (1:length(co2) - 1)/12 + 1959,
   co2 = c(co2)
 )
+
+head(data)
 ```
+
+Using `ggplot2`, we can then plot the raw data:
 
 
 ```{r, out.width="100%",  fig.width=8, fig.height=5}
-data %>% 
-  ggplot(aes(x=year, y=co2)) +
-  geom_point()
+ggplot(data, aes(x=year, y=co2)) +
+  geom_point() + 
+  theme_bw() + 
+  xlab("Year") + 
+  ylab("co2 concentration (parts per million)")
 ```
+## Specifying and Fitting the Model
 
-Now we can begin analyzing the data using Gaussian Processes. Examining the data, and based on our understanding of the climate, it looks like this data can be well-described by a long-term trend plus a periodic component. 
+The data appear to be reflective of a long-term process combined with a seasonal process which repeats every 12 months. This motivates a simplified version of the model described by Rassmusen and Williams (2005), which describes the co2 concentration observed at a given time $(y_i)$ as follows:
+
+\[
+y_i = \alpha + f_1(t) + f_2(t) + \varepsilon_i
+\]
+
+Where $\alpha$ is an intercept term, and $\varepsilon_i$ is a noise term. $f_1$ and $f_2$ are mean-zero Gaussian processes that absorb the long-term and periodic components, respectively. Specifically, we parameterize the kernels as described below. The formulas for the RBF and Periodic kernels are are taken from *Bayesian Data Analysis*, 3rd edition [@gelmanbda p. 515].
+
+* $f_1$ absorbs the long-term trend and is parameterized with an RBF kernel: $f_1 \sim GP(0, k_1), \quad k_2(t,t') = \sigma_1^2 \exp{\bigg(-\frac{(t-t')^2}{2l_1^2}\bigg)}$
+* $f_2$ absorbs the periodic trend, and is parameterized by an RBF kernel multiplied by a periodic kernel with a period of one year: $f_2 \sim GP(0, k_2), \quad k_2(t,t') = \sigma_2^2 \exp{\bigg(-\frac{(t-t')^2}{2l_2^2}\bigg)} \sigma_3^2 \exp{\bigg(-\frac{\sin^2(\pi (t-t'))}{l_3^2}\bigg)}$. The inclusion of the RBF kernel allows for the periodic component to change slightly over time. 
+
+`zoomerGP` provides a convenient formula syntax to describe this model, which we then fit using Empirical Bayes. 
 
 ```{r}
 set.seed(1)
 gp_model <- gaussian_process(
-  co2 ~ periodic(year, periods = c(1.0)) + rbf(year), 
-  data = data
+  co2 ~ periodic(year, periods = c(1.0))*rbf(year) + rbf(year), 
+  data = data, 
+  sparse = F, 
   )
 gp_model
 ```
 
+Examining the model fit object, we can see the log-likelihood, r-squared and. 
+
 ```{r, out.width="100%",  fig.width=8, fig.height=5}
-prediction_data <- data.frame(year = 1959 + seq(0,60, length.out = 500))
+prediction_data <- data.frame(year = 1959 + seq(0,90, length.out = 500))
 prediction_data$preds <- predict(gp_model, prediction_data)[,1]
 prediction_data$pred_var <- predict(gp_model, prediction_data)[,3]
 
@@ -58,7 +92,7 @@ ggplot() +
   geom_line(data = prediction_data, aes(x=year, y=preds)) + 
   geom_line(data = prediction_data, aes(x=year, y=ci_hi), linetype = 2, col = "darkgrey") + 
   geom_line(data = prediction_data, aes(x=year, y=ci_lo), linetype = 2, col = "darkgrey") 
-
-
 ```
 
+
+If we want to extract the periodic component, we can easily do so by isolating the ""

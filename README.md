@@ -1,77 +1,61 @@
 
-# Gaussian Process Regression (GPR) in R
+# ZoomerGP: Gaussian Process Regression in R
 
-`zoomerGP` is an R package that allows you to compose and fit Gaussian
-Process Regression models to data. The core inference code is
-implemented in Rust for speed, and approximations are available to allow
-users to fit models to large datasets (N \> 10,000). At the moment, only
-the gaussian likelihood is supported, but functionality to fit other
-likelihoods with Variational Inference is in development.
+`zoomerGP` provides a fast and composable language to write, fit, and
+explore Gaussian Process models in R. The package allows users to
+compose a Gaussian process kernel using a consise formula syntax, and
+tune hyperparameters through type-2 ML or Variational Inference (SVGD).
+Both Gaussian and non-Gaussian Likelihoods are supported.
 
-## Supported Kernel Functions:
+## Kernel formulas:
 
-The flagship feature of this package is a domain-specific language that
-helps you easily compose complicated kernels out of basic building
-blocks using a formula syntax.
-
-As an example, you can specify an rbf (gaussian) kernel that acts on a
-single variable, x, with the following syntax:
+`ZoomerGP`’s flagship feature is a tidy formula interface that allows
+users to cleanly specify complex Gaussian-process models. As an example,
+you can specify and fit a Gaussian Process with an RBF covariance
+function to a dataset with the following formula:
 
 ``` r
 gaussian_process(y ~ rbf(x), data = data)
 ```
 
-If you want to regress Y on an ARD-RBF kernel that acts on all columns
-of the input, you can simply use `rbf()`:
+This syntax also allows you to arbitrarily combine different kernels buy
+adding and multiplying them. As an example, one can try to fit a
+periodic trend that changes over time and a long-term trend to the data
+by using the following code:
 
 ``` r
-gaussian_process(y ~ rbf(), data = data)
+gaussian_process(y ~ periodic(x) * rbf(x) + rbf(x), data = data)
 ```
 
-This is because any kernel function called with no arguments will select
-all columns by default. Additionally, please note that all kernels are
-Automatic Relevance Determination (ARD) kernels, so a separate bandwidth
-is fit for each input dimension. This generally delivers superior
-performance in higher dimensions as it allows the regression to ‘zero
-out’ or not respond to input variables that do not matter.
-
-You can also combine kernels by adding and multiplying them with `+` and
-`*`. To give an example, we can fit a linear kernel times an RBF kernel
-with the following code:
+Each kernel can also act on multiple variables, as shown below:
 
 ``` r
-gaussian_process(y ~ linear(x) * rbf(x), data = data)
-
-## adding in another two predictors, a and b that enter seperately
-gaussian_process(y ~ linear(x) * rbf(x) + rbf(a,b), data = data)
+gaussian_process(a ~ periodic(b,c) * rbf(d,e,f,g) + rbf(h), data = data)
 ```
 
-`+` and `*` can be arbitrarily chained to combine as many kernels as you
-would like. If you would like to fit a very complex function, consider
-using the spectral mixture (`spectral[0-9]()`) kernels, which can
-generalize any stationary covariance function. These are great for
-fitting complex, or periodic functions (esp. time series).
+## Avaliable Kernels:
 
-You can also see a list of currently implemented kernels below. Formulas
-for the kernels and more features are forthcoming:
+At present the following kernels are implemented:
 
-| Kernel              |    DSL Name     |
-|:--------------------|:---------------:|
-| Squared Exponential |      rbf()      |
-| Spectral Mixture    | spectral[0-9]() |
-| Linear              |    linear()     |
-| Indicator           |   indicator()   |
+| Kernel | Function Name | Notes |
+|:---|:--:|:--:|
+| Squared Exponential | rbf() | Results in a smooth, infinitely-differentiable posterior. Too smooth for most applications |
+| Spectral Mixture | spectral[0-5]() | Spectal mixture kernel with 1,2,3,4, or 5 components. Can recover any stationary covariance function but is very expensive to fit. |
+| Linear | linear() | Recovers a linear trend |
+| Indicator | indicator() | Equal to $sigma^2$ if $x=x'$, zero otherwise. Useful when accounting for clustering. |
+| If / mask | mask() | Equal of one if both $x$ and $x'$ are equal to one, zero otherwise. Most useful when ‘masking’ out another kernel so it only acts on certain pairs of inputs |
+| Periodic | periodic() | Periodic similarity function. Can accept as a keyword argument a vector of periods associated with each dimension. |
 
 ## Fitting to Large Datasets with Sparse Approximations.
 
 Gaussian Process Regression are computationally intensive, and generally
-takes $O(n^3)$ computations to fit. To allow the method to scale to
-large datasets, this package implements the projected process
-approximation as described in Rassmusen and Williams’s (2005) Gaussian
-Processes for Machine Learning. To turn this approximation on, use the
-`sparse=T` argument when fitting the gaussian processes please be aware
-that you may also need to change (reduce) the default value of the
-number of inducing points (`n_points`) for numerical stability.
+take $O(n^3)$ computations to fit. To allow the method to scale to large
+datasets, this package implements the projected process approximation as
+described in Rassmusen and Williams’s (2005) Gaussian Processes for
+Machine Learning. To turn this approximation on, use the `sparse=T`
+argument when fitting the gaussian processes please be aware that you
+may also need to change the default value of the number of inducing
+points (`n_points`) for numerical stability.
 
 ## Optimization Methods
 
@@ -88,25 +72,24 @@ using the training_method argument to `gaussian_process` function
   Seems to work well across a variety of problems, but can get stuck in
   local minima.
 
-## Feature Roadmap
+## Fitting Non-Gaussian Likelihoods with Variational Inference
 
-The GPR package is a work in progress. This section summarizes the
-progress towards important feature goals we hope to include in the
-package:
+`zoomerGP` also implements a variant of the [Stein Variational Gaussian
+Processes](https://arxiv.org/abs/2009.12141) algorithm to perform
+variational inference over hyperparameters and latent function values
+when the likelihood is non-Gaussian. Specifically, we use the [Coin
+Sampling](https://arxiv.org/abs/2301.11294) algorithm proposed by the
+same authors to provide a robust Variational Inference engine that does
+not require tuning by the user.
 
-- [x] Type-2 ML estimation of hyperparameters (empirical Bayes) for
-  Gaussian likelihood.
-- [x] Sparse approximations to Gaussian likelihood
-- [x] Implement [spectral mixture
-  kernels](https://arxiv.org/pdf/1302.4245) to allow for more expressive
-  modelling.
-- [x] [COIN-optimizer](https://arxiv.org/abs/1705.07795) for fast
-  fitting
-- \[\] Implement derivatives of GP’s and average marginal effects
-  (A.M.E.’s)
-- \[\] Support for non-Gaussian likelihoods via variational Bayes.
+At the moment, inference for the following non-Gaussian likelihoods are
+implemented:
 
-### Installing Rust
+- logistic regression (via `the logistic_gaussian_process` function).
+
+# Installation Instructions
+
+## Installing Rust
 
 If your operating system or version of R is not installed, you must have
 the [Rust compiler](https://www.rust-lang.org/tools/install) installed

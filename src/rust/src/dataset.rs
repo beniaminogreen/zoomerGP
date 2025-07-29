@@ -3,11 +3,8 @@ use crate::dual_number::DualArr;
 
 #[allow(non_snake_case)]
 pub trait DataManager : Send + Sync {
-    fn outcome(&self) -> ArrayView1<f64>;
     fn get_X(&self) -> ArrayView2<f64>;
     fn get_x_scale_factor(&self) -> Array1<f64>;
-    fn unscale_outcome(&self, y : ArrayView1<f64>, gradient : bool)  -> DualArr;
-    fn scale_outcome(&self, y : ArrayView1<f64>, gradient : bool)  -> DualArr;
     fn shape(&self)  -> (usize,usize);
     fn scale_predictors(&self, x: ArrayView2<f64>) -> Array2<f64>;
 }
@@ -16,8 +13,6 @@ pub struct UnitStandardizedDataset {
     mins: Array1<f64>,
     ranges: Array1<f64>,
     scaled_x : Array2<f64>,
-    scaled_y : Array1<f64>,
-    y_bar : f64
 }
 
 impl UnitStandardizedDataset {
@@ -55,8 +50,6 @@ impl UnitStandardizedDataset {
             mins,
             ranges,
             scaled_x,
-            scaled_y : demeaned_y,
-            y_bar,
         }
     }
 }
@@ -65,35 +58,9 @@ impl DataManager for UnitStandardizedDataset {
     fn get_x_scale_factor(&self) -> Array1<f64> {
         1.0/self.ranges.clone()
     }
-    fn outcome(&self) -> ArrayView1<f64> {
-        self.scaled_y.view()
-    }
     fn get_X(&self) -> ArrayView2<f64> {
         self.scaled_x.view()
     }
-    fn unscale_outcome(&self, y : ArrayView1<f64>, gradient : bool)  -> DualArr {
-        let out_arr = y.to_owned() + self.y_bar;
-
-
-        if !gradient {
-            DualArr::from(out_arr)
-        } else {
-            let n = out_arr.len();
-            DualArr::from((out_arr, Array1::ones(n)))
-        }
-
-    }
-    fn scale_outcome(&self, y : ArrayView1<f64>, gradient : bool)  -> DualArr {
-        let out_arr = y.to_owned() - self.y_bar;
-
-        if !gradient {
-            DualArr::from(out_arr)
-        } else {
-            let n = out_arr.len();
-            DualArr::from((out_arr, Array1::ones(n)))
-        }
-    }
-    
     fn scale_predictors(&self, x : ArrayView2<f64>) -> Array2<f64> {
         let mut out = Array2::zeros((x.nrows(), x.ncols()));
         

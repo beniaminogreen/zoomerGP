@@ -26,13 +26,17 @@ pub struct GPRegression{
     pub stale : bool,
     pub K: Array2<f64>,
     pub K_inv: Array2<f64>,
-    pub constraints : Constraints
+    pub constraints : Constraints,
+    pub y_bar : f64
 }
 
 #[allow(non_snake_case)]
 impl GPRegression {
-    pub fn new(kernel : Box<dyn Kernel>, dataset : Arc<dyn DataManager>, response : Array1<f64>, noise : bool) -> Self {
+    pub fn new(kernel : Box<dyn Kernel>, dataset : Arc<dyn DataManager>, mut response : Array1<f64>, noise : bool) -> Self {
         let n = dataset.shape().0;
+
+        let y_bar = response.iter().sum::<f64>() / (response.len() as f64);
+        response -= y_bar;
 
         let n_params = if noise {
             kernel.num_params() + 1
@@ -57,6 +61,7 @@ impl GPRegression {
             sigma : 1.0,
             constraints : Constraints::new(constraints),
             kernel,
+            y_bar
         }
     }
 }

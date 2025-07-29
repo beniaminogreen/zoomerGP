@@ -82,7 +82,7 @@ impl Model for GPRegression {
                 }
             });
 
-        let preds = K_star.dot(&self.K_inv).dot(&self.response);
+        let preds = K_star.dot(&self.K_inv).dot(&self.response) + self.y_bar;
 
         let var : Vec<f64> = prediction_points
             .axis_iter(Axis(0))

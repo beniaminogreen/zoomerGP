@@ -5,7 +5,7 @@ reference:
   - title: Fit Gaussian Processes
     contents: 
       - gaussian_process
-      - logit_gaussian_process
+      - logistic_gaussian_process
   - title: Gaussian Process Methods
     contents: 
       - predict.gaussian_process

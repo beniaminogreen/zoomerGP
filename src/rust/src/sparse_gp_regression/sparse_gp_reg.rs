@@ -26,7 +26,8 @@ pub struct SparseGPRegression {
     pub X_inducing : Array2<f64>,
     pub sigma : f64,
     pub n_params : usize,
-    pub constraints : Constraints
+    pub constraints : Constraints,
+    pub y_bar : f64,
 }
 
 #[extendr]
@@ -38,9 +39,9 @@ impl SparseGPRegression {
         y: &[f64],
         kernel_specification: List,
     ) -> Self {
-        let y = Array1::from(y.to_owned());
-        //let y_bar = y.iter().sum::<f64>() / (y.len() as f64);
-        // y -= y_bar;
+        let mut y = Array1::from(y.to_owned());
+        let y_bar = y.iter().sum::<f64>() / (y.len() as f64);
+        y -= y_bar;
 
 
         let X = X.to_owned();
@@ -72,7 +73,8 @@ impl SparseGPRegression {
             K_nm: Array2::zeros((n, m)),
             K_mm: Array2::zeros((m, m)),
             sigma: 1.0,
-            constraints : Constraints::new(constraints)
+            constraints : Constraints::new(constraints),
+            y_bar
         }
     }
 
