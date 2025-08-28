@@ -28,7 +28,7 @@ extendr_module! {
     use sparse_gp_regression;
     use predict;
     use coin_svgd;
-    //use lyapunov;
+    use lyapunov;
     use latent_gp_regression;
     use sparse_latent_gp_regression;
 }

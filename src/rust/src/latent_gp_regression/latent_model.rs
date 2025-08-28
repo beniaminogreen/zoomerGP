@@ -1,8 +1,9 @@
+use ndarray::s;
 use ndarray::{Array1, Array2, Array3, ArrayView1, ArrayView2, Axis};
 use crate::constraint::constraints::Constraints;
 use crate::dual_number::Dual;
 use crate::latent_gp_regression::latent_gp_reg::LatentGPR;
-use crate::lyapunov::{lyap_newton_shulz_backward, lyap_newton_shulz_fwd};
+use crate::lyapunov::{lyap_newton_shulz_fwd, lyap_newton_shulz_backward};
 use crate::model::{ClonableModel, Model};
 use crate::predict::PredictionOutput;
 
@@ -16,11 +17,35 @@ use crate::likelihood::Likelihood;
 const NUM_FORWARD_ITER : usize = 5;
 const NUM_BACKWARD_ITER : usize = 5;
 
-const NUGGET : f64 = 0.001;
+const NUGGET : f64 = 0.01;
 
 fn outer_product(a: ArrayView1<f64>, b: ArrayView1<f64>) -> Array2<f64> {
     // Reshape a to (m, 1) and b to (1, n), then multiply (broadcasting)
-    a.to_owned().insert_axis(Axis(1)) * b.to_owned().insert_axis(Axis(0))
+    a.to_owned().insert_axis(Axis(1)).dot(&b.to_owned().insert_axis(Axis(0)))
+}
+
+impl LatentGPR {
+    fn log_prior(&self, gradient : bool) -> Dual {
+        let kernel_prior = self.kernel.log_prior(gradient);
+
+        let v_prior:  f64 = self.v.iter().map(|x| x.powi(2)).sum::<f64>().neg();
+
+        let log_prior = v_prior + kernel_prior.x;
+
+        if !gradient {
+            return Dual::from(log_prior)
+        }
+
+        let v_prior_grad : Vec<f64> = self.v.iter().map(|x| -2.0 *x ).collect();
+
+        let mut prior_grad = kernel_prior.grad.expect("prior did not have gradient").to_vec();
+
+        prior_grad.extend(v_prior_grad);
+
+        Dual::from((log_prior, Array1::from(prior_grad)))
+
+    }
+
 }
 
 #[extendr]
@@ -69,7 +94,10 @@ impl Model for LatentGPR{
 
         let likelihood_dual = self.likelihood.log_like(u.as_slice().unwrap(), gradient);
 
-        let log_like = v_component + likelihood_dual.x + &log_prior.x;
+        //let log_like = v_component + likelihood_dual.x + &log_prior.x;
+        let log_like = v_component + likelihood_dual.x;
+
+
 
         if !gradient {
             return Dual::from(log_like);
@@ -77,7 +105,6 @@ impl Model for LatentGPR{
 
         // if we do need to calculate the gradient, we need to calculate partials wrt theta
         let dl_dL : Array2<f64> = outer_product(likelihood_dual.grad.as_ref().unwrap().view(), self.v.view());
-
         let dl_dK = lyap_newton_shulz_backward(self.L.view(), dl_dL.view(), NUM_BACKWARD_ITER);
 
         let X = self.dataset.get_X();
@@ -101,13 +128,17 @@ impl Model for LatentGPR{
         let mut theta_grads = Vec::with_capacity(d);
         let log_prior_grad = log_prior.grad.unwrap();
 
+        dbg!(dl_dK.shape());
+
+
         for i in 0..d {
             let dK_dtheta : ArrayView2<f64> = matrix_differentials.index_axis(Axis(2),i);
+            dbg!(dK_dtheta.shape());
 
             let result : f64 =  dl_dK.iter().zip(dK_dtheta.iter()).map(|(a,b)| a*b).sum();
 
-
-            theta_grads.push(result + log_prior_grad[i]);
+            theta_grads.push(result);
+            //theta_grads.push(result + log_prior_grad[i]);
         }
 
 
@@ -131,6 +162,9 @@ impl Model for LatentGPR{
 
         let (L , _) = lyap_newton_shulz_fwd(self.K.view(), NUM_FORWARD_ITER);
         self.L = L;
+
+        let top_left = self.L.slice(s![0..3, 0..3]);
+        dbg!(top_left);
 
         self.stale = false;
     }

@@ -5,8 +5,10 @@ use crate::constraint::constraints::Constraints;
 use crate::dataset::{DataManager, UnitStandardizedDataset};
 use crate::kernel::kernel::Kernel;
 use extendr_api::prelude::*;
+use crate::dual_number::Dual;
 use crate::likelihood::{Likelihood, BinomialLogit};
 use crate::kernel::utils::{build_kernel_tree, parse_kernel_recursive};
+use crate::sparse_latent_gp_regression::sparse_latent_gp_reg::SparseLatentGPR;
 
 #[allow(non_snake_case)]
 #[extendr]
@@ -63,6 +65,8 @@ impl LatentGPR {
     }
 
 }
+
+
 
 extendr_module! {
     mod latent_gp_reg;

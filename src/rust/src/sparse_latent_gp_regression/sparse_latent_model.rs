@@ -88,7 +88,7 @@ impl Model for SparseLatentGPR{
         }
 
 
-        // if we do need to calculate the gradient, we need to calculate partials wrt theta
+        //  Need to calculate partials wrt theta
         let dl_dY : Array2<f64> = outer_product(likelihood_dual.grad.as_ref().unwrap().view(), self.v.view());
 
         let dl_dknm: Array2<f64> = dl_dY.dot(&self.L.t());
@@ -177,6 +177,31 @@ impl Model for SparseLatentGPR{
         self.v = Array1::from(latent_params.to_vec());
         self.stale = true;
     }
+}
+
+
+impl SparseLatentGPR {
+    fn log_prior(&self, gradient : bool) -> Dual {
+        let kernel_prior = self.kernel.log_prior(gradient);
+
+        let v_prior:  f64 = self.v.iter().map(|x| x.powi(2)).sum::<f64>().neg();
+
+        let log_prior = v_prior + kernel_prior.x;
+
+        if !gradient {
+            return Dual::from(log_prior)
+        }
+
+        let v_prior_grad : Vec<f64> = self.v.iter().map(|x| -2.0 *x ).collect();
+
+        let mut prior_grad = kernel_prior.grad.expect("prior did not have gradient").to_vec();
+
+        prior_grad.extend(v_prior_grad);
+
+        Dual::from((log_prior, Array1::from(prior_grad)))
+
+    }
+
 }
 
 impl ClonableModel for SparseLatentGPR {
